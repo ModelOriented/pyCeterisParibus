@@ -14,7 +14,7 @@ diabetes_y_test = diabetes.target[-20:]
 
 def random_forest_regression():
     # Create linear regression object
-    lr_model = ensemble.RandomForestRegressor()
+    lr_model = ensemble.RandomForestRegressor(n_estimators=100)
 
     # Train the model using the training sets
 

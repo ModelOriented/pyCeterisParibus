@@ -1,6 +1,7 @@
 import re
 
 import numpy as np
+import pandas as pd
 
 
 def individual_variable_profile(model, data, names, new_observation, y=None, selected_variables=None,
@@ -31,25 +32,25 @@ def individual_variable_profile(model, data, names, new_observation, y=None, sel
         selected_variables = names
 
     variables_dict = dict(zip(names, data.T))
-
     chosen_variables_dict = dict((var, variables_dict[var]) for var in selected_variables)
-
-    cp_dict = {}
-
     variable_splits = calculate_variable_splits(chosen_variables_dict, grid_points)
 
-    result = list()
+    result_df = [_single_variable_df(var_name, var_split, names, new_observation, predict_function)
+                 for var_name, var_split in variable_splits.items()]
 
-    for var, X_var in variable_splits.items():
-        cp_dict[var] = np.tile(new_observation, (grid_points, 1))
-        var_index = names.index(var)
-        cp_dict[var][::, var_index] = X_var
-        X_cp = cp_dict[var]
-        y_cp = predict_function(X_cp)
-        result.append((variable_splits[var], y_cp, var))
+    return result_df
 
-    return result
 
+def _single_variable_df(var_name, var_split, all_var_names, new_observation, predict_function):
+    # TODO make it object oriented and share parameters
+    grid_points = len(var_split)
+    X = np.tile(new_observation, (grid_points, 1))
+    X_dict = dict(zip(all_var_names, X.T))
+    df = pd.DataFrame.from_dict(X_dict)
+    df[var_name] = var_split
+    df['_yhat_'] = predict_function(df.values)
+    df['_var_'] = np.repeat(var_name, grid_points)
+    return df
 
 def calculate_variable_splits(chosen_variables_dict, grid_points):
     return dict((var, _calculate_single_split(X_var, grid_points)) for (var, X_var) in chosen_variables_dict.items())
