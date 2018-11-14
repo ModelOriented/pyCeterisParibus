@@ -1,6 +1,5 @@
 import re
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -50,14 +49,6 @@ def individual_variable_profile(model, data, names, new_observation, y=None, sel
         result.append((variable_splits[var], y_cp, var))
 
     return result
-
-
-def plot(cp_profile):
-    f, axarr = plt.subplots(1, len(cp_profile))
-    for i, (X, y, var) in enumerate(cp_profile):
-        axarr[i].plot(X, y, '-bo')
-        axarr[i].set_title(var)
-    plt.show()
 
 
 def calculate_variable_splits(chosen_variables_dict, grid_points):
