@@ -26,7 +26,7 @@ def individual_variable_profile(model, data, variable_names, new_observation, y=
     if not label:
         label = re.split('\(', model.__str__())[0]
     if selected_variables:
-        if not selected_variables in variable_names:
+        if not set(selected_variables).issubset(variable_names):
             raise ValueError('Invalid variable names')
     else:
         selected_variables = variable_names
