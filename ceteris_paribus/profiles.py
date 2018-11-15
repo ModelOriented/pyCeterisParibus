@@ -4,15 +4,15 @@ import numpy as np
 import pandas as pd
 
 
-def individual_variable_profile(model, data, names, new_observation, y=None, selected_variables=None,
-                                predict_function=None,
-                                grid_points=21, label=None):
+def individual_variable_profile(model, data, variable_names, new_observation, y=None, selected_variables=None,
+                                predict_function=None, grid_points=101, label=None):
     """
     Single Ceteris Paribus profile
     TODO document this
+    TODO change the grid points number
     :param model:
     :param data:
-    :param names:
+    :param variable_names:
     :param new_observation:
     :param y:
     :param selected_variables:
@@ -26,19 +26,23 @@ def individual_variable_profile(model, data, names, new_observation, y=None, sel
     if not label:
         label = re.split('\(', model.__str__())[0]
     if selected_variables:
-        if not selected_variables in names:
+        if not selected_variables in variable_names:
             raise ValueError('Invalid variable names')
     else:
-        selected_variables = names
+        selected_variables = variable_names
 
-    variables_dict = dict(zip(names, data.T))
+    variables_dict = dict(zip(variable_names, data.T))
     chosen_variables_dict = dict((var, variables_dict[var]) for var in selected_variables)
     variable_splits = calculate_variable_splits(chosen_variables_dict, grid_points)
 
-    result_df = [_single_variable_df(var_name, var_split, names, new_observation, predict_function)
-                 for var_name, var_split in variable_splits.items()]
+    result_dfs = [_single_variable_df(var_name, var_split, variable_names, new_observation, predict_function)
+                  for var_name, var_split in variable_splits.items()]
 
-    return result_df
+    variables_mask = [variable_names.index(var) for var in selected_variables]
+
+    new_observation_values = new_observation[variables_mask]
+    new_observation_predictions = predict_function([new_observation] * len(new_observation_values))
+    return result_dfs, new_observation_values, new_observation_predictions
 
 
 def _single_variable_df(var_name, var_split, all_var_names, new_observation, predict_function):
@@ -52,6 +56,7 @@ def _single_variable_df(var_name, var_split, all_var_names, new_observation, pre
     df['_var_'] = np.repeat(var_name, grid_points)
     return df
 
+
 def calculate_variable_splits(chosen_variables_dict, grid_points):
     return dict((var, _calculate_single_split(X_var, grid_points)) for (var, X_var) in chosen_variables_dict.items())
 
@@ -63,5 +68,9 @@ def _calculate_single_split(X_var, grid_points):
     :param grid_points:
     :return:
     """
+    if np.issubdtype(X_var.dtype, np.integer):
+        return np.unique(X_var)
+
     quantiles = np.linspace(0, 1, grid_points)
+
     return np.quantile(X_var, quantiles)
