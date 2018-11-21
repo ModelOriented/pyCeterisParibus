@@ -2,7 +2,7 @@ from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-from ceteris_paribus.plots import plot
+from ceteris_paribus.plots.plots import plot
 from ceteris_paribus.profiles import individual_variable_profile
 
 iris = load_iris()
