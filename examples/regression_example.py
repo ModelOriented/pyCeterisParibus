@@ -25,6 +25,6 @@ def random_forest_regression():
 
 if __name__ == "__main__":
     (model, data, labels, variable_names) = random_forest_regression()
-    cp_profile = individual_variable_profile(model, data, variable_names, X_train[0],
+    cp_profile = individual_variable_profile(model, data, variable_names, X_train[0], y=y_train[0],
                                              selected_variables=['TAX', 'CRIM'])
-    plot(cp_profile)
+    plot(cp_profile, show_residuals=True)

@@ -22,9 +22,15 @@ def individual_variable_profile(model, data, all_var_names, new_observation, y=N
     :return:
     """
     if not predict_function:
-        predict_function = model.predict
+        if hasattr(model, 'predict'):
+            predict_function = model.predict
+        else:
+            raise ValueError('Unable to find predict function')
     if not label:
-        label = re.split('\(', model.__str__())[0]
+        if hasattr(model, '__str__'):
+            label = re.split('\(', model.__str__())[0]
+        else:
+            label = ''
     if selected_variables:
         if not set(selected_variables).issubset(all_var_names):
             raise ValueError('Invalid variable names')
@@ -54,6 +60,7 @@ class CeterisParibus:
         variables_mask = [self._all_variable_names.index(var) for var in selected_variables]
         self.new_observation_values = new_observation[variables_mask]
         self.new_observation_predictions = predict_function([new_observation] * len(self.new_observation_values))
+        self.new_observation_true = y
 
     def calculate_variable_splits(self):
         return dict(
@@ -77,9 +84,6 @@ class CeterisParibus:
 
         :param var_name:
         :param var_split:
-        :param all_var_names:
-        :param new_observation:
-        :param predict_function:
         :return:
         """
         grid_points = len(var_split)
@@ -90,4 +94,5 @@ class CeterisParibus:
         df['_yhat_'] = self._predict_function(df.values)
         df['_vname_'] = np.repeat(var_name, grid_points)
         df['_label_'] = self._label
+        df['_ids_'] = 1
         return df

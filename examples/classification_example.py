@@ -24,5 +24,6 @@ def random_forest_classifier():
 if __name__ == "__main__":
     (model, data, labels, variable_names) = random_forest_classifier()
     predict_function = lambda X: model.predict_proba(X)[::, 0]
-    cp_profile = individual_variable_profile(model, data, variable_names, X[1], predict_function=predict_function)
+    cp_profile = individual_variable_profile(model, data, variable_names, X[1], y=y[1],
+                                             predict_function=predict_function)
     plot(cp_profile)
