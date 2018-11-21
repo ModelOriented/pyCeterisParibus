@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -9,7 +10,6 @@ def individual_variable_profile(model, data, all_var_names, new_observation, y=N
     """
     Single Ceteris Paribus profile
     TODO document this
-    TODO change the grid points number
     :param model:
     :param data:
     :param all_var_names:
@@ -48,35 +48,36 @@ class CeterisParibus:
                  grid_points, label):
         self._all_variable_names = all_variable_names
         self._new_observation = new_observation
+        self._selected_variables = sorted(selected_variables)
         self._predict_function = predict_function
         self._grid_points = grid_points
         self._label = label
         self._variables_dict = dict(zip(self._all_variable_names, data.T))
-        self._chosen_variables_dict = dict((var, self._variables_dict[var]) for var in selected_variables)
+        self._chosen_variables_dict = dict((var, self._variables_dict[var]) for var in self._selected_variables)
 
         variable_splits = self.calculate_variable_splits()
-        self.profiles_list = [self._single_variable_df(var_name, var_split)
-                              for var_name, var_split in variable_splits.items()]
-        variables_mask = [self._all_variable_names.index(var) for var in selected_variables]
+        self._profiles_list = [self._single_variable_df(var_name, var_split)
+                               for var_name, var_split in variable_splits.items()]
+        self.profile = pd.concat(self._profiles_list, ignore_index=True)
+        variables_mask = [self._all_variable_names.index(var) for var in self._selected_variables]
         self.new_observation_values = new_observation[variables_mask]
         self.new_observation_predictions = predict_function([new_observation] * len(self.new_observation_values))
         self.new_observation_true = y
 
     def calculate_variable_splits(self):
         return dict(
-            (var, self._calculate_single_split(X_var, self._grid_points))
+            (var, self._calculate_single_split(X_var))
             for (var, X_var) in self._chosen_variables_dict.items()
         )
 
-    def _calculate_single_split(self, X_var, grid_points):
+    def _calculate_single_split(self, X_var):
         """
         :param X_var:
-        :param grid_points:
         :return:
         """
         if np.issubdtype(X_var.dtype, np.integer):
             return np.unique(X_var)
-        quantiles = np.linspace(0, 1, grid_points)
+        quantiles = np.linspace(0, 1, self._grid_points)
         return np.quantile(X_var, quantiles)
 
     def _single_variable_df(self, var_name, var_split):
@@ -96,3 +97,6 @@ class CeterisParibus:
         df['_label_'] = self._label
         df['_ids_'] = 1
         return df
+
+    def split_by(self, column):
+        return OrderedDict(sorted(list(self.profile.groupby(column))))

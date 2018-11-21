@@ -2,14 +2,13 @@ from matplotlib import pyplot as plt
 
 
 def plot(cp_profile, show_profiles=True, show_observations=True, show_residuals=False, selected_variables=None):
-    profiles = cp_profile.profiles_list
+    profiles_dict = cp_profile.split_by("_vname_")
     xs = cp_profile.new_observation_values
     ys = cp_profile.new_observation_predictions
-    n_profiles = len(profiles)
+    n_profiles = len(profiles_dict)
 
     f, axarr = plt.subplots(n_profiles, sharey=True)
-    for i, (df, x, y) in enumerate(zip(profiles, xs, ys)):
-        var_name = df['_vname_'][0]
+    for i, ((var_name, df), x, y) in enumerate(zip(profiles_dict.items(), xs, ys)):
         if show_profiles:
             axarr[i].plot(df[var_name], df['_yhat_'], '-b')
         if show_observations:
