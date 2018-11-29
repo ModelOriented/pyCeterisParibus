@@ -15,7 +15,7 @@ def individual_variable_profile(model, data, all_var_names, new_observation, y=N
     :param all_var_names: column names in the same order as columns in data
     :param new_observation: a new observation with columns that corresponds to variables used in the model
     :param y: y true labels for `new_observation`. If specified then will be added to ceteris paribus plots
-    :param selected_variables:
+    :param selected_variables: variables selected for calculating profiles
     :param predict_function: predict function, will be extracted from model if not supplied
     :param grid_points: number of points for profile
     :param label: name of the model
@@ -47,7 +47,8 @@ class CeterisParibus:
 
     def __init__(self, data, all_variable_names, new_observation, y, selected_variables, predict_function,
                  grid_points, label):
-        self._all_variable_names = all_variable_names
+        self._data = data
+        self._all_variable_names = list(all_variable_names)
         self._new_observation = np.array(new_observation)
         if self._new_observation.ndim == 1:
             self._new_observation = np.array([self._new_observation])
@@ -65,8 +66,7 @@ class CeterisParibus:
         variables_mask = [self._all_variable_names.index(var) for var in self._selected_variables]
         self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
         self.new_observation_predictions = predict_function(self._new_observation)
-        self.new_observation_true = [y] if y else None
-
+        self.new_observation_true = [y] if np.isscalar(y) else y
 
     def calculate_variable_splits(self):
         return dict(
@@ -105,3 +105,8 @@ class CeterisParibus:
 
     def set_label(self, label):
         self._label = label
+
+    def print_profile(self):
+        print('Selected variables: {}'.format(self._selected_variables))
+        print('Training data size: {}'.format(self._data.shape[0]))
+        print(self.profile)
