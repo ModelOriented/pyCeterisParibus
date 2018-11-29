@@ -7,20 +7,6 @@ import pandas as pd
 
 def individual_variable_profile(model, data, all_var_names, new_observation, y=None, selected_variables=None,
                                 predict_function=None, grid_points=101, label=None):
-    """
-    Single Ceteris Paribus profile
-    TODO document this
-    :param model:
-    :param data:
-    :param all_var_names:
-    :param new_observation:
-    :param y:
-    :param selected_variables:
-    :param predict_function:
-    :param grid_points:
-    :param label:
-    :return:
-    """
     if not predict_function:
         if hasattr(model, 'predict'):
             predict_function = model.predict
@@ -47,7 +33,9 @@ class CeterisParibus:
     def __init__(self, data, all_variable_names, new_observation, y, selected_variables, predict_function,
                  grid_points, label):
         self._all_variable_names = all_variable_names
-        self._new_observation = new_observation
+        self._new_observation = np.array(new_observation)
+        if self._new_observation.ndim == 1:
+            self._new_observation = np.array([self._new_observation])
         self._selected_variables = sorted(selected_variables)
         self._predict_function = predict_function
         self._grid_points = grid_points
@@ -60,9 +48,10 @@ class CeterisParibus:
                                for var_name, var_split in variable_splits.items()]
         self.profile = pd.concat(self._profiles_list, ignore_index=True)
         variables_mask = [self._all_variable_names.index(var) for var in self._selected_variables]
-        self.new_observation_values = new_observation[variables_mask]
-        self.new_observation_predictions = predict_function([new_observation] * len(self.new_observation_values))
-        self.new_observation_true = y
+        self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
+        self.new_observation_predictions = predict_function(self._new_observation)
+        self.new_observation_true = [y] if y else None
+
 
     def calculate_variable_splits(self):
         return dict(
@@ -71,31 +60,25 @@ class CeterisParibus:
         )
 
     def _calculate_single_split(self, X_var):
-        """
-        :param X_var:
-        :return:
-        """
         if np.issubdtype(X_var.dtype, np.integer):
             return np.unique(X_var)
         quantiles = np.linspace(0, 1, self._grid_points)
         return np.quantile(X_var, quantiles)
 
     def _single_variable_df(self, var_name, var_split):
-        """
+        return pd.concat([self._single_observation_df(observation, var_name, var_split, profile_id)
+                          for profile_id, observation in enumerate(self._new_observation)], ignore_index=True)
 
-        :param var_name:
-        :param var_split:
-        :return:
-        """
+    def _single_observation_df(self, observation, var_name, var_split, profile_id):
         grid_points = len(var_split)
-        X = np.tile(self._new_observation, (grid_points, 1))
+        X = np.tile(observation, (grid_points, 1))
         X_dict = dict(zip(self._all_variable_names, X.T))
         df = pd.DataFrame.from_dict(X_dict)
         df[var_name] = var_split
         df['_yhat_'] = self._predict_function(df.values)
         df['_vname_'] = np.repeat(var_name, grid_points)
         df['_label_'] = self._label
-        df['_ids_'] = 1
+        df['_ids_'] = profile_id
         return df
 
     def split_by(self, column):
