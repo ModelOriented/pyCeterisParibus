@@ -8,6 +8,19 @@ import pandas as pd
 
 def individual_variable_profile(model, data, all_var_names, new_observation, y=None, selected_variables=None,
                                 predict_function=None, grid_points=101, label=None):
+    """
+    Calculate ceteris paribus profile
+    :param model: a model to be explained
+    :param data: data to be used for creating profiles, e.g. calculating splits
+    :param all_var_names: column names in the same order as columns in data
+    :param new_observation: a new observation with columns that corresponds to variables used in the model
+    :param y: y true labels for `new_observation`. If specified then will be added to ceteris paribus plots
+    :param selected_variables:
+    :param predict_function: predict function, will be extracted from model if not supplied
+    :param grid_points: number of points for profile
+    :param label: name of the model
+    :return: instance of CeterisParibus class
+    """
     if not predict_function:
         if hasattr(model, 'predict'):
             predict_function = model.predict
@@ -84,6 +97,10 @@ class CeterisParibus:
         return df
 
     def split_by(self, column):
+        """
+        Split cp profile data frame by values of a given column
+        :return: sorted mapping of values to dataframes
+        """
         return OrderedDict(sorted(list(self.profile.groupby(column))))
 
     def set_label(self, label):
