@@ -1,3 +1,4 @@
+import logging
 import re
 from collections import OrderedDict
 
@@ -16,7 +17,8 @@ def individual_variable_profile(model, data, all_var_names, new_observation, y=N
         if hasattr(model, '__str__'):
             label = re.split('\(', model.__str__())[0]
         else:
-            label = ''
+            logging.warning("Model is unlabeled... \n You can add label using method set_label")
+            label = 'unlabeled_model'
     if selected_variables:
         if not set(selected_variables).issubset(all_var_names):
             raise ValueError('Invalid variable names')
@@ -83,3 +85,6 @@ class CeterisParibus:
 
     def split_by(self, column):
         return OrderedDict(sorted(list(self.profile.groupby(column))))
+
+    def set_label(self, label):
+        self._label = label
