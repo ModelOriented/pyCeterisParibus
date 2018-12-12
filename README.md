@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/kmichael08/pyCeterisParibus/branch/master/graph/badge.svg)](https://codecov.io/gh/kmichael08/pyCeterisParibus)
+[![codecov](https://codecov.io/gh/ModelOriented/pyCeterisParibus/branch/master/graph/badge.svg)](https://codecov.io/gh/ModelOriented/pyCeterisParibus)
 
 # pyCeterisParibus
 Python library for Ceteris Paribus Plots
