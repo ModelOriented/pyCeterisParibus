@@ -1,3 +1,7 @@
 .idea/
 
-ceteris_paribus/__pycache__/
+__pycache__/
+
+.coverage*
+
+*.pyc
