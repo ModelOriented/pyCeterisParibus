@@ -121,3 +121,12 @@ class TestGower(unittest.TestCase):
     def test_gower_dist_3(self):
         distance = _gower_dist(self.observation, self.first, self.ranges, self.X.dtypes)
         self.assertAlmostEqual(distance, 0.52967, delta=0.0001)
+
+    def test_gower_dist_4(self):
+        # test with missing values
+        X_with_nans = self.X.append({'age': 21, 'children': True}, ignore_index=True)
+        dtypes = X_with_nans.dtypes
+        X_with_nans = _normalize_mixed_data_columns(X_with_nans)
+        ranges = _calc_range_mixed_data_columns(X_with_nans, self.observation, dtypes)
+        distance = _gower_dist(X_with_nans[-1], self.observation, ranges, dtypes)
+        self.assertAlmostEqual(distance, 0.7727, delta=0.0001)

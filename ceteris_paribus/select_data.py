@@ -32,7 +32,7 @@ def select_neighbours(data, observation, y=None, variables=None, dist_fun='gower
     :param observation: reference observation for neighbours selection
     :param y: labels for observations
     :param variables: TODO add variables choice - require supplying variable names along with data
-    :param dist_fun: 'gower' or distance function, as pairwise distances in sklearn
+    :param dist_fun: 'gower' or distance function, as pairwise distances in sklearn, gower works with missing data
     :param n: size of the sample
     :return: selected observations and corresponding labels if provided
     """

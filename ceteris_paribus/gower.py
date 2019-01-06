@@ -25,7 +25,7 @@ def _calc_range_mixed_data_columns(data, observation, dtypes):
     result = np.zeros(cols)
     for col in range(cols):
         if np.issubdtype(dtypes[col], np.number):
-            result[col] = max(data[:, col].max(), observation[col]) - min(data[:, col].min(), observation[col])
+            result[col] = max(max(data[:, col]), observation[col]) - min(min(data[:, col]), observation[col])
     return result
 
 
@@ -43,8 +43,12 @@ def _gower_dist(xi, xj, ranges, dtypes):
     cols = len(ranges)
     for col in range(cols):
         if np.issubdtype(dtypes[col], np.number):
-            sij = abs(xi[col] - xj[col]) / ranges[col]
-            wij = 0 if pd.isnull(xi[col]) or pd.isnull(xj[col]) else 1
+            if pd.isnull(xi[col]) or pd.isnull(xj[col]):
+                wij = 0
+                sij = 0
+            else:
+                wij = 1
+                sij = abs(xi[col] - xj[col]) / ranges[col]
         else:
             sij = xi[col] != xj[col]
             wij = 0 if pd.isnull(xi[col]) and pd.isnull(xj[col]) else 1
