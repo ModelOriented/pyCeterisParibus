@@ -1,20 +1,25 @@
+""" This is the module for calculating gower's distance/dissimilarity """
+
 import numpy as np
 import pandas as pd
 
 
 # Normalize the array
 def _normalize_mixed_data_columns(arr):
+    """
+    Returns the numpy array representation of the data.
+    Loses information about the types
+    """
     if isinstance(arr, pd.DataFrame) or isinstance(arr, pd.core.series.Series):
-        return np.array(arr)
+        return np.array(arr, dtype=object)
     elif isinstance(arr, np.ndarray):
         return arr
     else:
-        arr = np.array(arr)
-    return arr
+        return np.array(arr, dtype=object)
 
 
 def _calc_range_mixed_data_columns(data, observation, dtypes):
-    """ Return range for each column """
+    """ Return range for each numeric column, 0 for categorical variables """
     _, cols = data.shape
 
     result = np.zeros(cols)
@@ -68,15 +73,3 @@ def gower_distances(data, observation):
     observation = _normalize_mixed_data_columns(observation)
     ranges = _calc_range_mixed_data_columns(data, observation, dtypes)
     return np.array([_gower_dist(row, observation, ranges, dtypes) for row in data])
-
-
-if __name__ == "__main__":
-    X = pd.DataFrame({'age': [21, 21, 19, 30, 21, 21, 19, 30],
-                      'gender': ['M', 'M', 'N', 'M', 'F', 'F', 'F', 'F'],
-                      'civil_status': ['MARRIED', 'SINGLE', 'SINGLE', 'SINGLE', 'MARRIED', 'SINGLE', 'WIDOW',
-                                       'DIVORCED'],
-                      'salary': [3000.0, 1200.0, 32000.0, 1800.0, 2900.0, 1100.0, 10000.0, 1500.0],
-                      'children': [True, False, True, True, True, False, False, True],
-                      'available_credit': [2200, 100, 22000, 1100, 2000, 100, 6000, 2200]})
-
-    print(gower_distances(X, X.iloc[0]))

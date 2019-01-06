@@ -44,7 +44,7 @@ def select_neighbours(data, observation, y=None, variables=None, dist_fun='gower
     else:
         if not callable(dist_fun):
             raise ValueError('Distance has to be "gower" or a custom function')
-        distances = dist_fun(data, [observation])[0]
+        distances = dist_fun([observation], data)[0]
     indices = np.argpartition(distances, n - 1)[:n]
     selected_points = data[indices, :]
     if y is not None:
