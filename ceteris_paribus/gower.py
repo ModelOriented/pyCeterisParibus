@@ -71,7 +71,9 @@ def gower_distances(data, observation):
     elif hasattr(data, 'dtype'):
         dtypes = [data.dtype] * len(data)
     else:
-        dtypes = [np.float32] * len(data)
+        # TODO maybe strictly specify accepted format
+        data = pd.DataFrame(data)
+        dtypes = data.dtypes
 
     data = _normalize_mixed_data_columns(data)
     observation = _normalize_mixed_data_columns(observation)

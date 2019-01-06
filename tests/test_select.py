@@ -58,6 +58,10 @@ class TestSelect(unittest.TestCase):
         sample_x = select_neighbours(self.x, np.array([4, 3, 2]), n=300)
         self.assertEqual(len(sample_x), len(self.x))
 
+    def test_select_neighbouts_5(self):
+        with self.assertRaises(ValueError) as c:
+            select_neighbours(self.x, np.array([4, 3, 2]), n=1, dist_fun='euclidean')
+
 
 class TestGower(unittest.TestCase):
 
@@ -106,6 +110,13 @@ class TestGower(unittest.TestCase):
         self.assertEqual(distances.shape, (8,))
         np.testing.assert_array_almost_equal(distances[:2],
                                              np.array([0.3517, 0.3356]), decimal=4)
+
+    def test_gower_distances_4(self):
+        # test accepting data in a dictionary format
+        dict_data = self.X.to_dict()
+        distances1 = gower_distances(self.X, self.X.iloc[1])
+        distances2 = gower_distances(dict_data, self.X.iloc[1])
+        np.testing.assert_array_almost_equal(distances1, distances2)
 
     def test_gower_dist_1(self):
         # test dist(a, a) == 0
