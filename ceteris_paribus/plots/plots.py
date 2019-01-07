@@ -1,3 +1,4 @@
+import numpy as np
 from bokeh.layouts import gridplot
 from bokeh.plotting import figure, show
 from matplotlib import pyplot as plt
@@ -74,36 +75,46 @@ def _single_plot_bokeh(data, var_name, new_observation, y_predicted, y_true, y_r
     return fig
 
 
-def _get_y_range(cp_profile):
-    y_min = min(min(cp_profile.profile['_yhat_']), min(cp_profile.new_observation_predictions))
-    y_max = max(max(cp_profile.profile['_yhat_']), max(cp_profile.new_observation_predictions))
+def _get_y_range(cp_profile, selected_variables):
+    y_min = np.inf
+    y_max = -np.inf
+    profiles_dict = cp_profile.split_by("_vname_")
+    for (var_name, df) in profiles_dict.items():
+        if not selected_variables or var_name in selected_variables:
+            y_min = min(y_min, min(df['_yhat_']))
+            y_max = max(y_max, max(df['_yhat_']))
+
+    y_min = min(y_min, min(cp_profile.new_observation_predictions))
+    y_max = max(y_max, max(cp_profile.new_observation_predictions))
+
     if cp_profile.new_observation_true is not None:
         y_min = min(y_min, min(cp_profile.new_observation_true))
         y_max = max(y_max, max(cp_profile.new_observation_true))
-    # rescale it
+
     dist = y_max - y_min
     return [y_min - 0.1 * dist, y_max + 0.1 * dist]
 
 
-def _plot_bokeh(cp_profile, sharey, **kwargs):
+def _plot_bokeh(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwargs):
     """
     Plot ceteris paribus profile using bokeh
     :param cp_profile: ceteris paribus profile
     :param sharey: whether to share y axis range among individual variable plots
     :param kwargs: other options passed to the plot
     """
-    y_range = _get_y_range(cp_profile) if sharey else None
     profiles_dict = cp_profile.split_by("_vname_")
     xs = cp_profile.new_observation_values.T
     ys = cp_profile.new_observation_predictions
     plots = []
-    for i, ((var_name, df), x) in enumerate(zip(profiles_dict.items(), xs)):
-        plots.append(_single_plot_bokeh(df, var_name, x, ys, cp_profile.new_observation_true, y_range, **kwargs))
-    f = gridplot(plots, ncols=3)
+    y_range = _get_y_range(cp_profile, selected_variables) if sharey else None
+    for (var_name, df), x in zip(profiles_dict.items(), xs):
+        if not selected_variables or var_name in selected_variables:
+            plots.append(_single_plot_bokeh(df, var_name, x, ys, cp_profile.new_observation_true, y_range, **kwargs))
+    f = gridplot(plots, ncols=ncols)
     show(f)
 
 
-def plot(cp_profile, library='bokeh', sharey=True, **kwargs):
+def plot(cp_profile, *args, library='bokeh', **kwargs):
     """
     Plot ceteris paribus profile
     :param cp_profile: ceteris paribus profile
@@ -112,7 +123,7 @@ def plot(cp_profile, library='bokeh', sharey=True, **kwargs):
     :param kwargs: other options passed to the plot
     """
     if library == 'bokeh':
-        _plot_bokeh(cp_profile, sharey, **kwargs)
+        _plot_bokeh(cp_profile, *args, **kwargs)
     elif library == 'matplotlib':
         _plot_matplotlib(cp_profile, **kwargs)
     else:

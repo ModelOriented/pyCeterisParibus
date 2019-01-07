@@ -35,5 +35,5 @@ if __name__ == "__main__":
     plot(cp2)
 
     neighbours = select_neighbours(X_train, X_train[0], n=15)
-    cp3 = individual_variable_profile(model, data, variable_names, neighbours, selected_variables=['TAX', 'CRIM'])
+    cp3 = individual_variable_profile(model, data, variable_names, neighbours, selected_variables=['LSTAT', 'RM'])
     plot(cp3)
