@@ -25,13 +25,25 @@ def select_sample(data, y=None, n=15, seed=42):
         return data[indices, :]
 
 
-def select_neighbours(data, observation, y=None, variables=None, dist_fun='gower', n=20):
+def select_subset_data(data, observation, variable_names, selected_variables):
+    if selected_variables is None:
+        return data, observation
+    try:
+        indices = [variable_names.index(var) for var in selected_variables]
+    except ValueError:
+        logging.warning("Wrong set of variables")
+        return data, observation
+    return data[:, indices], observation[indices]
+
+
+def select_neighbours(data, observation, y=None, variable_names=None, selected_variables=None, dist_fun='gower', n=20):
     """
     Select observations from dataset, that are similar to a given observation
     :param data: array with observations
     :param observation: reference observation for neighbours selection
     :param y: labels for observations
-    :param variables: TODO add variables choice - require supplying variable names along with data
+    :param variable_names: names of variables
+    :param selected_variables: selected variables - require supplying variable names along with data
     :param dist_fun: 'gower' or distance function, as pairwise distances in sklearn, gower works with missing data
     :param n: size of the sample
     :return: selected observations and corresponding labels if provided
@@ -39,6 +51,9 @@ def select_neighbours(data, observation, y=None, variables=None, dist_fun='gower
     if n > data.shape[0]:
         logging.warning("Given n ({}) is larger than data size ({})".format(n, data.shape[0]))
         n = data.shape[0]
+
+    data, observation = select_subset_data(data, observation, variable_names, selected_variables)
+
     if dist_fun == 'gower':
         distances = gower_distances(data, observation)
     else:
