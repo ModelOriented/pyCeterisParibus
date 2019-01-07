@@ -25,13 +25,14 @@ def select_sample(data, y=None, n=15, seed=42):
         return data[indices, :]
 
 
-def select_subset_data(data, observation, variable_names, selected_variables):
+def _select_subset_data(data, observation, variable_names=None, selected_variables=None):
     if selected_variables is None:
         return data, observation
     try:
         indices = [variable_names.index(var) for var in selected_variables]
     except ValueError:
-        logging.warning("Wrong set of variables")
+        logging.warning("Selected variables: {} is not a subset of variables: {}".format(
+            selected_variables, variable_names))
         return data, observation
     return data[:, indices], observation[indices]
 
@@ -52,7 +53,7 @@ def select_neighbours(data, observation, y=None, variable_names=None, selected_v
         logging.warning("Given n ({}) is larger than data size ({})".format(n, data.shape[0]))
         n = data.shape[0]
 
-    data, observation = select_subset_data(data, observation, variable_names, selected_variables)
+    data, observation = _select_subset_data(data, observation, variable_names, selected_variables)
 
     if dist_fun == 'gower':
         distances = gower_distances(data, observation)

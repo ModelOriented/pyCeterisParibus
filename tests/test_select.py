@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 
 from ceteris_paribus.gower import _normalize_mixed_data_columns, gower_distances, _calc_range_mixed_data_columns, \
     _gower_dist
-from ceteris_paribus.select_data import select_sample, select_neighbours
+from ceteris_paribus.select_data import select_sample, select_neighbours, _select_subset_data
 
 
 class TestSelect(unittest.TestCase):
@@ -58,9 +58,41 @@ class TestSelect(unittest.TestCase):
         sample_x = select_neighbours(self.x, np.array([4, 3, 2]), n=300)
         self.assertEqual(len(sample_x), len(self.x))
 
-    def test_select_neighbouts_5(self):
+    def test_select_neighbours_5(self):
         with self.assertRaises(ValueError) as c:
             select_neighbours(self.x, np.array([4, 3, 2]), n=1, dist_fun='euclidean')
+
+    @staticmethod
+    def select_subset_helper(true, result):
+        np.testing.assert_array_equal(true[0], result[0])
+        np.testing.assert_array_equal(true[1], result[1])
+
+    def test_select_subset_data_1(self):
+        observation = self.x[0]
+        self.select_subset_helper((self.x, observation), _select_subset_data(self.x, observation))
+
+    def test_select_subset_data_2(self):
+        observation = self.x[0]
+        variables = ['var1', 'var2', 'var3']
+        self.select_subset_helper((self.x, observation), _select_subset_data(self.x, observation, variables, variables))
+
+    def test_select_subset_data_3(self):
+        observation = self.x[0]
+        variables = ['var1', 'var2', 'var3']
+        selected_variables = ['var3', 'var2']
+        subset = _select_subset_data(self.x, observation, variable_names=variables,
+                                     selected_variables=selected_variables)
+        self.select_subset_helper(subset, (self.x[:, [2, 1]], observation[[2, 1]]))
+
+    def test_select_subset_data_4(self):
+        # warning expected
+        observation = self.x[0]
+        variables = ['var1', 'var2', 'var3']
+        # selection of invalid variable
+        selected_variables = ['var4', 'var2']
+        subset = _select_subset_data(self.x, observation, variable_names=variables,
+                                     selected_variables=selected_variables)
+        self.select_subset_helper(subset, (self.x, observation))
 
 
 class TestGower(unittest.TestCase):
