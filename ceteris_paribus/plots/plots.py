@@ -12,7 +12,7 @@ def _build_aggregated_profile(data, aggregate_profiles):
     """
     # TODO currently aggregate function is assumed to be a numpy function
     # TODO write it more pandas way if possible
-    var_name = data['_vname_'][0]
+    var_name = data['_vname_'].iloc[0]
     profiles = data.groupby('_ids_')
     x = profiles.get_group(0)[var_name]
     profiles_dict = dict(list(profiles))
