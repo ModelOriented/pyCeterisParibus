@@ -1,37 +1,6 @@
 import numpy as np
 from bokeh.layouts import gridplot
 from bokeh.plotting import figure, show
-from matplotlib import pyplot as plt
-
-
-def _single_plot_matplotlib(subplot, data, var_name, new_observation, y_predicted, y_true,
-                            show_profiles=True, show_observations=True, show_residuals=False):
-    profiles = data.groupby('_ids_')
-    if show_profiles:
-        for _, profile in profiles:
-            subplot.plot(profile[var_name], profile['_yhat_'], '-b')
-    if show_observations:
-        for a, b in zip(new_observation, y_predicted):
-            subplot.plot(a, b, '-bo')
-    if show_residuals:
-        for a, b, c in zip(new_observation, y_predicted, y_true):
-            subplot.plot(a, c, '-ro')
-            subplot.plot([a, a], [b, c], '-', color='black')
-
-    subplot.set_title(var_name)
-
-
-def _plot_matplotlib(cp_profile, **kwargs):
-    # TODO consider to remove as a legacy
-    profiles_dict = cp_profile.split_by("_vname_")
-    xs = cp_profile.new_observation_values.T
-    ys = cp_profile.new_observation_predictions
-    n_profiles = len(profiles_dict)
-    f, axarr = plt.subplots(n_profiles, sharey=True)
-
-    for i, ((var_name, df), x) in enumerate(zip(profiles_dict.items(), xs)):
-        _single_plot_matplotlib(axarr[i], df, var_name, x, ys, cp_profile.new_observation_true, **kwargs)
-    plt.show()
 
 
 def _build_aggregated_profile(data, aggregate_profiles):
@@ -139,17 +108,11 @@ def _plot_bokeh(cp_profile, *args, sharey=True, ncols=3, selected_variables=None
     show(f)
 
 
-def plot(cp_profile, *args, library='bokeh', **kwargs):
+def plot(cp_profile, *args, **kwargs):
     """
     Plot ceteris paribus profile
     TODO enable more than one profile
     :param cp_profile: ceteris paribus profile
-    :param library: plotting library, accepts 'bokeh', 'matplotlib'
     :param kwargs: other options passed to the plot
     """
-    if library == 'bokeh':
-        _plot_bokeh(cp_profile, *args, **kwargs)
-    elif library == 'matplotlib':
-        _plot_matplotlib(cp_profile, **kwargs)
-    else:
-        raise ValueError("Unknown plotting library: {}".format(library))
+    _plot_bokeh(cp_profile, *args, **kwargs)
