@@ -34,8 +34,18 @@ def _plot_matplotlib(cp_profile, **kwargs):
     plt.show()
 
 
+def _build_aggregated_profile(profiles, aggregate_profiles, var_name):
+    # TODO test and document it, write it more in a pandas way?
+    x = profiles.get_group(0)[var_name]
+    profiles_dict = dict(list(profiles))
+    profiles_list = [np.array(pr['_yhat_']) for pr in profiles_dict.values()]
+    y = aggregate_profiles(profiles_list, axis=0)
+    return x, y
+
+
 def _single_plot_bokeh(data, var_name, new_observation, y_predicted, y_true, y_range=None,
                        show_profiles=True, show_observations=True, show_residuals=False,
+                       aggregate_profiles=None,
                        size=5, alpha=0.6, color="black",
                        size_points=12, alpha_points=0.5, color_points="red",
                        size_residuals=2, alpha_residuals=1., color_residuals="black"):
@@ -50,6 +60,8 @@ def _single_plot_bokeh(data, var_name, new_observation, y_predicted, y_true, y_r
     :param show_profiles: whether to show profiles
     :param show_observations: whether to depict individual observations
     :param show_residuals: whether to plot residuals with a line ended with a point, requires y_true supply
+    :param aggregate_profiles: If None (default) then individual profiles will be plotted.
+        If a function (e.g. mean or median) then profiles will be aggregated and only the aggregate profile will be plotted
     :param size: width of a line for profiles
     :param alpha: opacity of lines for profiles
     :param color: color of lines for profiles
@@ -63,8 +75,12 @@ def _single_plot_bokeh(data, var_name, new_observation, y_predicted, y_true, y_r
     fig = figure(title=var_name, y_range=y_range)
     profiles = data.groupby('_ids_')
     if show_profiles:
-        for _, profile in profiles:
-            fig.line(profile[var_name], profile['_yhat_'], line_width=size, line_alpha=alpha, color=color)
+        if aggregate_profiles is not None:
+            x, y = _build_aggregated_profile(profiles, aggregate_profiles, var_name)
+            fig.line(x, y, line_width=size, line_alpha=alpha, color=color)
+        else:
+            for _, profile in profiles:
+                fig.line(profile[var_name], profile['_yhat_'], line_width=size, line_alpha=alpha, color=color)
     if show_observations:
         for a, b in zip(new_observation, y_predicted):
             fig.circle(a, b, size=size_points, alpha=alpha_points, color=color_points)
@@ -117,8 +133,8 @@ def _plot_bokeh(cp_profile, *args, sharey=True, ncols=3, selected_variables=None
 def plot(cp_profile, *args, library='bokeh', **kwargs):
     """
     Plot ceteris paribus profile
+    TODO enable more than one profile
     :param cp_profile: ceteris paribus profile
-    :param sharey: whether to share y axis range among individual variable plots
     :param library: plotting library, accepts 'bokeh', 'matplotlib'
     :param kwargs: other options passed to the plot
     """

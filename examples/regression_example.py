@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn import datasets, ensemble
 from sklearn.model_selection import train_test_split
 
@@ -38,3 +39,5 @@ if __name__ == "__main__":
                                    selected_variables=variable_names, n=15)
     cp3 = individual_variable_profile(model, data, variable_names, neighbours, selected_variables=['LSTAT', 'RM'])
     plot(cp3)
+
+    plot(cp3, aggregate_profiles=np.mean)
