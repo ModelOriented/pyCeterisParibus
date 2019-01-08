@@ -34,8 +34,17 @@ def _plot_matplotlib(cp_profile, **kwargs):
     plt.show()
 
 
-def _build_aggregated_profile(profiles, aggregate_profiles, var_name):
-    # TODO test and document it, write it more in a pandas way?
+def _build_aggregated_profile(data, aggregate_profiles):
+    """
+    Build aggregated (single) profile
+    :param data: ceteris paribus profiles
+    :param aggregate_profiles: function aggregating
+    :return: x, y - pair of numpy arrays with x and y coordinates
+    """
+    # TODO currently aggregate function is assumed to be a numpy function
+    # TODO write it more pandas way if possible
+    var_name = data['_vname_'][0]
+    profiles = data.groupby('_ids_')
     x = profiles.get_group(0)[var_name]
     profiles_dict = dict(list(profiles))
     profiles_list = [np.array(pr['_yhat_']) for pr in profiles_dict.values()]
@@ -76,7 +85,7 @@ def _single_plot_bokeh(data, var_name, new_observation, y_predicted, y_true, y_r
     profiles = data.groupby('_ids_')
     if show_profiles:
         if aggregate_profiles is not None:
-            x, y = _build_aggregated_profile(profiles, aggregate_profiles, var_name)
+            x, y = _build_aggregated_profile(data, aggregate_profiles)
             fig.line(x, y, line_width=size, line_alpha=alpha, color=color)
         else:
             for _, profile in profiles:
