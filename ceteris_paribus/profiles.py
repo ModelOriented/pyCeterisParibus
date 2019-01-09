@@ -101,7 +101,7 @@ class CeterisParibus:
         Split cp profile data frame by values of a given column
         :return: sorted mapping of values to dataframes
         """
-        return OrderedDict(sorted(list(self.profile.groupby(column))))
+        return OrderedDict(sorted(list(self.profile.groupby(column, sort=False))))
 
     def set_label(self, label):
         self._label = label
