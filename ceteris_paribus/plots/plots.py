@@ -28,9 +28,10 @@ def _build_aggregated_profile(data, aggregate_profiles):
 def _single_variable_plot(fig, data, var_name, new_observation, y_predicted, y_true,
                           show_profiles=True, show_observations=True, show_residuals=False,
                           aggregate_profiles=None,
-                          size=5, alpha=0.6, color="black",
+                          size=5, alpha=0.6, color_single_residual="black",
                           size_points=12, alpha_points=0.5, color_points="red",
                           size_residuals=2, alpha_residuals=1., color_residuals="black",
+                          color_up_residuals=None, color_down_residuals=None,
                           legend=None):
     """
     Plot single variable plot using bokeh
@@ -47,30 +48,36 @@ def _single_variable_plot(fig, data, var_name, new_observation, y_predicted, y_t
         If a function (e.g. mean or median) then profiles will be aggregated and only the aggregate profile will be plotted
     :param size: width of a line for profiles
     :param alpha: opacity of lines for profiles
-    :param color: color of lines for profiles
+    :param color_single_residual: color of lines for profiles
     :param size_points: size of points to be plotted
     :param alpha_points: opacity of points to be plotted
     :param color_points: color of points to be plotted
     :param size_residuals: size of line for residuals
     :param alpha_residuals: opacity of line for residuals
     :param color_residuals: color of line for residuals
+    :param color_up_residuals: color of line for residuals pointed up
+    :param color_down_residuals: color of line for residuals pointed down
     :param legend: description in legend for the profile
     """
     profiles = data.groupby('_ids_')
     if show_profiles:
         if aggregate_profiles is not None:
             x, y = _build_aggregated_profile(data, aggregate_profiles)
-            fig.line(x, y, line_width=size, line_alpha=alpha, color=color)
+            fig.line(x, y, line_width=size, line_alpha=alpha, color=color_single_residual)
         else:
             for _, profile in profiles:
-                fig.line(profile[var_name], profile['_yhat_'], line_width=size, line_alpha=alpha, color=color,
+                fig.line(profile[var_name], profile['_yhat_'], line_width=size, line_alpha=alpha,
+                         color=color_single_residual,
                          legend=legend)
     if show_observations:
         for a, b in zip(new_observation, y_predicted):
             fig.circle(a, b, size=size_points, alpha=alpha_points, color=color_points)
     if show_residuals:
+        color_up_residuals = color_up_residuals or color_residuals
+        color_down_residuals = color_down_residuals or color_residuals
         for a, b, c in zip(new_observation, y_predicted, y_true):
-            fig.line([a, a], [b, c], line_width=size_residuals, line_alpha=alpha_residuals, color=color_residuals)
+            color_single_residual = color_up_residuals if c > b else color_down_residuals
+            fig.line([a, a], [b, c], line_width=size_residuals, line_alpha=alpha_residuals, color=color_single_residual)
             fig.circle(a, c, size=size_points, alpha=alpha_residuals, color=color_residuals)
 
 
@@ -109,7 +116,8 @@ def _single_profile_plot(cp_profile, figures, y_range, selected_variables, color
                                       cp_profile.new_observation_true, y_range, legend=legend, **kwargs)
             else:
                 _single_variable_plot(figures[i], df, var_name, x, ys,
-                                      cp_profile.new_observation_true, y_range, color=color, legend=legend, **kwargs)
+                                      cp_profile.new_observation_true, y_range, color_single_residual=color,
+                                      legend=legend, **kwargs)
 
 
 def plot(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwargs):
