@@ -1,62 +1,42 @@
-import logging
-import re
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
 
 
-def individual_variable_profile(model, data, all_var_names, new_observation, y=None, selected_variables=None,
-                                predict_function=None, grid_points=101, label=None):
+def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101):
     """
     Calculate ceteris paribus profile
-    :param model: a model to be explained
-    :param data: data to be used for creating profiles, e.g. calculating splits
-    :param all_var_names: column names in the same order as columns in data
+    :param explainer: a model to be explained
     :param new_observation: a new observation with columns that corresponds to variables used in the model
     :param y: y true labels for `new_observation`. If specified then will be added to ceteris paribus plots
-    :param selected_variables: variables selected for calculating profiles
-    :param predict_function: predict function, will be extracted from model if not supplied
+    :param variables: variables selected for calculating profiles
     :param grid_points: number of points for profile
-    :param label: name of the model
     :return: instance of CeterisParibus class
     """
-    if not predict_function:
-        if hasattr(model, 'predict'):
-            predict_function = model.predict
-        else:
-            raise ValueError('Unable to find predict function')
-    if not label:
-        if hasattr(model, '__str__'):
-            label = re.split('\(', model.__str__())[0]
-        else:
-            logging.warning("Model is unlabeled... \n You can add label using method set_label")
-            label = 'unlabeled_model'
-    if selected_variables:
-        if not set(selected_variables).issubset(all_var_names):
+    if variables:
+        if not set(variables).issubset(explainer.var_names):
             raise ValueError('Invalid variable names')
     else:
-        selected_variables = all_var_names
+        variables = explainer.var_names
 
-    cp_profiles = CeterisParibus(data, all_var_names, new_observation, y, selected_variables, predict_function,
-                                 grid_points, label)
+    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points)
     return cp_profiles
 
 
 class CeterisParibus:
 
-    def __init__(self, data, all_variable_names, new_observation, y, selected_variables, predict_function,
-                 grid_points, label):
-        self._data = data
-        self._all_variable_names = list(all_variable_names)
+    def __init__(self, explainer, new_observation, y, selected_variables, grid_points):
+        self._data = explainer.data
+        self._all_variable_names = list(explainer.var_names)
         self._new_observation = np.array(new_observation)
         if self._new_observation.ndim == 1:
             self._new_observation = np.array([self._new_observation])
         self._selected_variables = sorted(selected_variables)
-        self._predict_function = predict_function
+        self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
-        self._label = label
-        self._variables_dict = dict(zip(self._all_variable_names, data.T))
+        self._label = explainer.label
+        self._variables_dict = dict(zip(self._all_variable_names, self._data.T))
         self._chosen_variables_dict = dict((var, self._variables_dict[var]) for var in self._selected_variables)
 
         variable_splits = self.calculate_variable_splits()
@@ -65,7 +45,7 @@ class CeterisParibus:
         self.profile = pd.concat(self._profiles_list, ignore_index=True)
         variables_mask = [self._all_variable_names.index(var) for var in self._selected_variables]
         self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
-        self.new_observation_predictions = predict_function(self._new_observation)
+        self.new_observation_predictions = self._predict_function(self._new_observation)
         self.new_observation_true = [y] if np.isscalar(y) else y
 
     def calculate_variable_splits(self):

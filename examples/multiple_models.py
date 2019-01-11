@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn import ensemble, svm
 from sklearn.linear_model import LinearRegression
 
+from ceteris_paribus.explainer import explain
 from ceteris_paribus.plots.plots import plot
 from ceteris_paribus.profiles import individual_variable_profile
 from ceteris_paribus.select_data import select_sample
@@ -45,13 +46,17 @@ if __name__ == "__main__":
     (gb_model, _, _, _) = gradient_boosting_model()
     (svm_model, _, _, _) = supported_vector_machines_model()
 
-    cp_profile = individual_variable_profile(linear_model, data, variable_names, x[0], y[0])
+    explainer_linear = explain(linear_model, variable_names, data, y)
+    explainer_gb = explain(gb_model, variable_names, data, y)
+    explainer_svm = explain(svm_model, variable_names, data, y)
+
+    cp_profile = individual_variable_profile(explainer_linear, x[0], y[0])
     plot(cp_profile, show_residuals=True)
 
     sample_x, sample_y = select_sample(x, y, n=10)
-    cp2 = individual_variable_profile(gb_model, data, variable_names, sample_x, y=sample_y)
+    cp2 = individual_variable_profile(explainer_gb, sample_x, y=sample_y)
 
-    cp3 = individual_variable_profile(gb_model, data, variable_names, x[0], y[0])
+    cp3 = individual_variable_profile(explainer_gb, x[0], y[0])
     plot(cp3, show_residuals=True)
 
     plot(cp_profile, cp3, show_residuals=True)

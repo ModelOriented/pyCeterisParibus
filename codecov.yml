@@ -1,3 +1,2 @@
 ignore:
     - examples/
-    - regression_example.py 

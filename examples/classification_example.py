@@ -2,6 +2,7 @@ from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
+from ceteris_paribus.explainer import explain
 from ceteris_paribus.plots.plots import plot
 from ceteris_paribus.profiles import individual_variable_profile
 
@@ -24,6 +25,6 @@ def random_forest_classifier():
 if __name__ == "__main__":
     (model, data, labels, variable_names) = random_forest_classifier()
     predict_function = lambda X: model.predict_proba(X)[::, 0]
-    cp_profile = individual_variable_profile(model, data, variable_names, X[1], y=y[1],
-                                             predict_function=predict_function)
+    explainer_rf = explain(model, variable_names, data, labels, predict_function=predict_function)
+    cp_profile = individual_variable_profile(explainer_rf, X[1], y=y[1])
     plot(cp_profile)
