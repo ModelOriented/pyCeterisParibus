@@ -120,7 +120,6 @@ class CeterisParibus:
     def save_observations(self, profiles, filename):
         data = self.dump_observations(profiles)
         with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
-            print(data)
             f.write("observation = {};".format(json.dumps(data, indent=2, default=self.default)))
 
     def dump_observations(self, profiles):
