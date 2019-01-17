@@ -1,10 +1,15 @@
 import itertools
+import json
 import logging
+import os
+import webbrowser
 
 import bokeh.palettes
 import numpy as np
 from bokeh.layouts import gridplot
 from bokeh.plotting import figure, show
+
+from ceteris_paribus.plots import PLOTS_DIR
 
 
 def _build_aggregated_profile(data, aggregate_profiles):
@@ -146,3 +151,16 @@ def plot(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwa
 
     f = gridplot(figures, ncols=ncols)
     show(f)
+
+
+def plot_d3(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwargs):
+    params = dict()
+    params['selected_variables'] = selected_variables or cp_profile._selected_variables
+
+    with open(os.path.join(PLOTS_DIR, "params.js"), 'w') as f:
+        f.write("params = " + json.dumps(params, indent=2) + ";")
+
+    print(cp_profile._selected_variables)
+    cp_profile.dump_observations(cp_profile._selected_variables, 'obs.js')
+    cp_profile.dump_profiles("profile_dump.js")
+    webbrowser.open("file://{}".format(os.path.join(PLOTS_DIR, "plots.html")))

@@ -1,7 +1,11 @@
+import json
+import os
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
+
+from ceteris_paribus.plots import PLOTS_DIR
 
 
 def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101):
@@ -90,3 +94,23 @@ class CeterisParibus:
         print('Selected variables: {}'.format(self._selected_variables))
         print('Training data size: {}'.format(self._data.shape[0]))
         print(self.profile)
+
+    def dump_profiles(self, filename):
+        data = []
+        for i, row in self.profile.iterrows():
+            data.append(dict(zip(self.profile.columns, row)))
+        with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
+            f.write("profile = " + json.dumps(data, indent=2) + ";")
+
+    def dump_observations(self, selected_variables, filename):
+        dicts = []
+        for i, yhat in enumerate(self.new_observation_predictions):
+            for var_name in selected_variables:
+                d = dict(zip(self._all_variable_names, self._new_observation[i]))
+                d['_vname_'] = var_name
+                d['_yhat_'] = yhat
+                d['_label_'] = self._label
+                d['_ids_'] = i
+                dicts.append(d)
+        with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
+            f.write("observation = " + json.dumps(dicts, indent=2) + ";")
