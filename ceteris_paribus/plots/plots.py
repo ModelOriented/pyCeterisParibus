@@ -8,8 +8,12 @@ import bokeh.palettes
 import numpy as np
 from bokeh.layouts import gridplot
 from bokeh.plotting import figure, show
+from flask import Flask, render_template
 
 from ceteris_paribus.plots import PLOTS_DIR
+
+app = Flask(__name__, template_folder=PLOTS_DIR)
+number = iter(range(1000))
 
 
 def _build_aggregated_profile(data, aggregate_profiles):
@@ -125,7 +129,7 @@ def _single_profile_plot(cp_profile, figures, y_range, selected_variables, color
                                       legend=legend, **kwargs)
 
 
-def plot(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwargs):
+def plot_bokeh(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwargs):
     """
     Plot ceteris paribus profile
     :param cp_profile: ceteris paribus profile
@@ -153,14 +157,35 @@ def plot(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwa
     show(f)
 
 
-def plot_d3(cp_profile, *args, sharey=True, ncols=3, selected_variables=None, **kwargs):
-    params = dict()
-    params['selected_variables'] = selected_variables or cp_profile._selected_variables
+def plot_d3(cp_profile, *args,
+            show_profiles=True, show_observations=True, show_residuals=False, show_rugs=False,
+            aggregate_profiles=None, selected_variables=None, **kwargs):
 
-    with open(os.path.join(PLOTS_DIR, "params.js"), 'w') as f:
+    params = dict()
+    params.update(kwargs)
+    params["variables"] = selected_variables or cp_profile.selected_variables
+    params['color'] = "_label_" if args else None
+    params['show_profiles'] = show_profiles
+    params['show_observations'] = show_observations
+    params['show_rugs'] = show_rugs
+    params['show_residuals'] = show_residuals and cp_profile.new_observation_true
+    params['aggregate_profiles'] = aggregate_profiles
+
+    plot_id = str(next(number))
+
+    with open(os.path.join(PLOTS_DIR, "params{}.js".format(plot_id)), 'w') as f:
         f.write("params = " + json.dumps(params, indent=2) + ";")
 
-    print(cp_profile._selected_variables)
-    cp_profile.dump_observations(cp_profile._selected_variables, 'obs.js')
-    cp_profile.dump_profiles("profile_dump.js")
-    webbrowser.open("file://{}".format(os.path.join(PLOTS_DIR, "plots.html")))
+    all_profiles = [cp_profile] + list(args)
+
+    cp_profile.save_observations(all_profiles, 'obs{}.js'.format(plot_id))
+    cp_profile.save_profiles(all_profiles, "profile{}.js".format(plot_id))
+
+    with app.app_context():
+        data = render_template("plot_template.html", i=plot_id, params=params)
+
+    with open(os.path.join(PLOTS_DIR, "plots{}.html").format(plot_id), 'w') as f:
+        f.write(data)
+
+    # open plot in a browser
+    webbrowser.open("file://{}".format(os.path.join(PLOTS_DIR, "plots{}.html".format(plot_id))))

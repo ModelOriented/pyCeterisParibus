@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="utf-8">
+
+    <title> ceterisParibus D3 template
+    </title>
+
+    <!-- loading D3 library, internet connection needed -->
+    <script src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.css">
+
+    <script type="text/javascript" charset="utf8"
+            src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js"></script>
+
+
+    <!-- datasets -->
+    <script src="profile{{i}}.js" charset="utf-8" lang="js"></script>
+    <script src="obs{{i}}.js" charset="utf-8" lang="js"></script>
+    <script src="params{{i}}.js" charset="utf-8" lang="js"></script>
+
+    <!-- functions -->
+    <script src="./ceterisParibusD3.js" charset="utf-8" lang="js"></script>
+
+</head>
+<body>
+
+<div id='chartDiv'></div>
+
+<script type="text/javascript">
+    new ceterisParibusD3.createPlot(div = "chartDiv", // container id (string) or selection of container (e.g. document.getElementById("chartDiv"))
+        data = profile, // data (data calculated by ceterisparibus)
+        dataObs = observation, // data (data observations)
+        options = params
+    );
+
+</script>
+</body>
+</html>

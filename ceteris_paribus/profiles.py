@@ -36,18 +36,18 @@ class CeterisParibus:
         self._new_observation = np.array(new_observation)
         if self._new_observation.ndim == 1:
             self._new_observation = np.array([self._new_observation])
-        self._selected_variables = sorted(selected_variables)
+        self.selected_variables = sorted(selected_variables)
         self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
         self._label = explainer.label
         self._variables_dict = dict(zip(self._all_variable_names, self._data.T))
-        self._chosen_variables_dict = dict((var, self._variables_dict[var]) for var in self._selected_variables)
+        self._chosen_variables_dict = dict((var, self._variables_dict[var]) for var in self.selected_variables)
 
         variable_splits = self.calculate_variable_splits()
         self._profiles_list = [self._single_variable_df(var_name, var_split)
                                for var_name, var_split in variable_splits.items()]
         self.profile = pd.concat(self._profiles_list, ignore_index=True)
-        variables_mask = [self._all_variable_names.index(var) for var in self._selected_variables]
+        variables_mask = [self._all_variable_names.index(var) for var in self.selected_variables]
         self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
         self.new_observation_predictions = self._predict_function(self._new_observation)
         self.new_observation_true = [y] if np.isscalar(y) else y
@@ -91,26 +91,48 @@ class CeterisParibus:
         self._label = label
 
     def print_profile(self):
-        print('Selected variables: {}'.format(self._selected_variables))
+        print('Selected variables: {}'.format(self.selected_variables))
         print('Training data size: {}'.format(self._data.shape[0]))
         print(self.profile)
 
-    def dump_profiles(self, filename):
-        data = []
-        for i, row in self.profile.iterrows():
-            data.append(dict(zip(self.profile.columns, row)))
+    def save_profiles(self, profiles, filename):
+        data = self.dump_profiles(profiles)
         with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
-            f.write("profile = " + json.dumps(data, indent=2) + ";")
+            f.write("profile = {};".format(json.dumps(data, indent=2, default=self.default)))
 
-    def dump_observations(self, selected_variables, filename):
-        dicts = []
-        for i, yhat in enumerate(self.new_observation_predictions):
-            for var_name in selected_variables:
-                d = dict(zip(self._all_variable_names, self._new_observation[i]))
-                d['_vname_'] = var_name
-                d['_yhat_'] = yhat
-                d['_label_'] = self._label
-                d['_ids_'] = i
-                dicts.append(d)
+    def dump_profiles(self, profiles):
+        data = []
+        for cp_profile in profiles:
+            for i, row in cp_profile.profile.iterrows():
+                data.append(dict(zip(cp_profile.profile.columns, row)))
+        return data
+
+    @staticmethod
+    def default(o):
+        """
+        Workaround for dumping arrays with np.int64 type into json
+        From: https://stackoverflow.com/a/50577730/7828646
+\        """
+        if isinstance(o, np.int64):
+            return int(o)
+        raise TypeError
+
+    def save_observations(self, profiles, filename):
+        data = self.dump_observations(profiles)
         with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
-            f.write("observation = " + json.dumps(dicts, indent=2) + ";")
+            print(data)
+            f.write("observation = {};".format(json.dumps(data, indent=2, default=self.default)))
+
+    def dump_observations(self, profiles):
+        data = []
+        for profile in profiles:
+            for i, yhat in enumerate(profile.new_observation_predictions):
+                for var_name in profile.selected_variables:
+                    d = dict(zip(profile._all_variable_names, profile._new_observation[i]))
+                    d['_vname_'] = var_name
+                    d['_yhat_'] = yhat
+                    d['_label_'] = profile._label
+                    d['_ids_'] = i
+                    d['_y_'] = profile.new_observation_true[i] if profile.new_observation_true else None
+                    data.append(d)
+        return data
