@@ -12,10 +12,11 @@ def explain(model, variable_names, data=None, y=None, predict_function=None, lin
         else:
             raise ValueError('Unable to find predict function')
     if not label:
-        if hasattr(model, '__str__'):
-            label = re.split('\(', model.__str__())[0]
+        logging.warning("Model is unlabeled... \n You can add label using method set_label")
+        label_items = re.split('\(', str(model))
+        if label_items and len(label_items) > 1:
+            label = label_items[0]
         else:
-            logging.warning("Model is unlabeled... \n You can add label using method set_label")
             label = 'unlabeled_model'
 
     explainer = Explainer(model, variable_names, data, y, predict_function, link, label)
