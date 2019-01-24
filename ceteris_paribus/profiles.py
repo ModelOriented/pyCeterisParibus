@@ -132,6 +132,6 @@ class CeterisParibus:
                     d['_yhat_'] = yhat
                     d['_label_'] = profile._label
                     d['_ids_'] = i
-                    d['_y_'] = profile.new_observation_true[i] if profile.new_observation_true else None
+                    d['_y_'] = profile.new_observation_true[i] if profile.new_observation_true is not None else None
                     data.append(d)
         return data

@@ -157,22 +157,22 @@ def plot_bokeh(cp_profile, *args, sharey=True, ncols=3, selected_variables=None,
     show(f)
 
 
-def plot_d3(cp_profile, *args,
+def plot_d3(cp_profile, *args, color=None,
             show_profiles=True, show_observations=True, show_residuals=False, show_rugs=False,
             aggregate_profiles=None, selected_variables=None, **kwargs):
 
     params = dict()
     params.update(kwargs)
     params["variables"] = selected_variables or cp_profile.selected_variables
-    params['color'] = "_label_" if args else None
+    params['color'] = "_label_" if args else color
     params['show_profiles'] = show_profiles
     params['show_observations'] = show_observations
     params['show_rugs'] = show_rugs
-    params['show_residuals'] = show_residuals and cp_profile.new_observation_true
+    params['show_residuals'] = show_residuals and (cp_profile.new_observation_true is not None)
+    # TODO define the set of possible aggregators (strings)
     params['aggregate_profiles'] = aggregate_profiles
 
     plot_id = str(next(number))
-
     with open(os.path.join(PLOTS_DIR, "params{}.js".format(plot_id)), 'w') as f:
         f.write("params = " + json.dumps(params, indent=2) + ";")
 
