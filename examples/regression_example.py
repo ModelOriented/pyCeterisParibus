@@ -1,5 +1,4 @@
 from sklearn import datasets, ensemble
-from sklearn import datasets, ensemble
 from sklearn.model_selection import train_test_split
 
 from ceteris_paribus.explainer import explain

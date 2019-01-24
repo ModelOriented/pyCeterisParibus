@@ -18,51 +18,76 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
     :param grid_points: number of points for profile
     :return: instance of CeterisParibus class
     """
+    variables = _get_variables(variables, explainer)
+    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points)
+    return cp_profiles
+
+
+def _get_variables(variables, explainer):
+    """
+    Get valid variables for the profile
+    :param variables: collection of variables
+    :param explainer: Explainer object
+    :return: collection of variables
+    """
     if variables:
         if not set(variables).issubset(explainer.var_names):
             raise ValueError('Invalid variable names')
     else:
         variables = explainer.var_names
-
-    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points)
-    return cp_profiles
+    return variables
 
 
 class CeterisParibus:
 
     def __init__(self, explainer, new_observation, y, selected_variables, grid_points):
+        # TODO specify variable splits manually
         self._data = explainer.data
-        self._all_variable_names = list(explainer.var_names)
-        self._new_observation = np.array(new_observation)
-        if self._new_observation.ndim == 1:
-            self._new_observation = np.array([self._new_observation])
-        self.selected_variables = sorted(selected_variables)
         self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
         self._label = explainer.label
-        self._variables_dict = dict(zip(self._all_variable_names, self._data.T))
-        self._chosen_variables_dict = dict((var, self._variables_dict[var]) for var in self.selected_variables)
-
-        variable_splits = self.calculate_variable_splits()
-        self._profiles_list = [self._single_variable_df(var_name, var_split)
-                               for var_name, var_split in variable_splits.items()]
-        self.profile = pd.concat(self._profiles_list, ignore_index=True)
+        self._all_variable_names = list(explainer.var_names)
+        self.selected_variables = sorted(selected_variables)
+        self._new_observation = np.array(new_observation)
+        if self._new_observation.ndim == 1:
+            self._new_observation = np.array([self._new_observation])
+        self.profile = self._calculate_profile()
         variables_mask = [self._all_variable_names.index(var) for var in self.selected_variables]
         self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
         self.new_observation_predictions = self._predict_function(self._new_observation)
         self.new_observation_true = [y] if np.isscalar(y) else y
 
-    def calculate_variable_splits(self):
-        return dict(
-            (var, self._calculate_single_split(X_var))
-            for (var, X_var) in self._chosen_variables_dict.items()
-        )
+    def _calculate_profile(self):
+        variables_dict = dict(zip(self._all_variable_names, self._data.T))
+        chosen_variables_dict = dict((var, variables_dict[var]) for var in self.selected_variables)
+
+        variable_splits = self._calculate_variable_splits(chosen_variables_dict)
+        profiles_list = [self._single_variable_df(var_name, var_split)
+                         for var_name, var_split in variable_splits.items()]
+        profile = pd.concat(profiles_list, ignore_index=True)
+        return profile
 
     def _calculate_single_split(self, X_var):
+        """
+        Calculate the split for a single variable
+        :param X_var: variable data
+        :return: selected subset of values for the variable
+        """
         if np.issubdtype(X_var.dtype, np.integer):
             return np.unique(X_var)
         quantiles = np.linspace(0, 1, self._grid_points)
         return np.quantile(X_var, quantiles)
+
+    def _calculate_variable_splits(self, chosen_variables_dict):
+        """
+        Calculate splits for the given variables
+        :param chosen_variables_dict: mapping  of variables into the values
+        :return: mapping of variables into selected subsets of values
+        """
+        return dict(
+            (var, self._calculate_single_split(X_var))
+            for (var, X_var) in chosen_variables_dict.items()
+        )
 
     def _single_variable_df(self, var_name, var_split):
         return pd.concat([self._single_observation_df(observation, var_name, var_split, profile_id)
