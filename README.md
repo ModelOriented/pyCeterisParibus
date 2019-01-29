@@ -4,3 +4,15 @@
 
 # pyCeterisParibus
 Python library for Ceteris Paribus Plots
+
+## Setup
+Works on Python 3.5+
+
+In order to install the package execute:
+```
+pip install git+https://github.com/ModelOriented/pyCeterisParibus
+```
+or download the sources, enter the main directory and perform:
+```
+python setup.py install
+```
