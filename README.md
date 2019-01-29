@@ -18,3 +18,11 @@ https://github.com/ModelOriented/pyCeterisParibus.git
 cd pyCeterisParibus
 python setup.py install   # (alternatively use pip install .)
 ```
+
+## Docs
+To build documentation do:
+```
+cd docs
+make html
+```
+and open `_build/html/index.html`
