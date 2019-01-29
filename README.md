@@ -21,7 +21,11 @@ python setup.py install   # (alternatively use pip install .)
 ```
 
 ## Docs
-To build documentation do:
+Latest documentation is hosted here: 
+
+https://pyceterisparibus.readthedocs.io
+
+To build the documentation locally:
 ```
 cd docs
 make html
