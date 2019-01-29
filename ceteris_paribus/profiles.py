@@ -11,6 +11,7 @@ from ceteris_paribus.plots import PLOTS_DIR
 def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101):
     """
     Calculate ceteris paribus profile
+
     :param explainer: a model to be explained
     :param new_observation: a new observation for which the profiles are calculated
     :param y: y true labels for `new_observation`. If specified then will be added to ceteris paribus plots
@@ -26,6 +27,7 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
 def _get_variables(variables, explainer):
     """
     Get valid variables for the profile
+
     :param variables: collection of variables
     :param explainer: Explainer object
     :return: collection of variables
@@ -70,6 +72,7 @@ class CeterisParibus:
     def _calculate_single_split(self, X_var):
         """
         Calculate the split for a single variable
+
         :param X_var: variable data
         :return: selected subset of values for the variable
         """
@@ -81,6 +84,7 @@ class CeterisParibus:
     def _calculate_variable_splits(self, chosen_variables_dict):
         """
         Calculate splits for the given variables
+
         :param chosen_variables_dict: mapping  of variables into the values
         :return: mapping of variables into selected subsets of values
         """
@@ -92,6 +96,7 @@ class CeterisParibus:
     def _single_variable_df(self, var_name, var_split):
         """
         Calculate profiles for a given variable
+
         :param var_name: variable name
         :param var_split: split values for the variable
         :return: DataFrame with profiles for a given variable
@@ -102,6 +107,7 @@ class CeterisParibus:
     def _single_observation_df(self, observation, var_name, var_split, profile_id):
         """
         Calculates the single profile
+
         :param observation: observation for which the profile is calculated
         :param var_name: variable name
         :param var_split: split values for the variable
@@ -123,6 +129,7 @@ class CeterisParibus:
     def split_by(self, column):
         """
         Split cp profile data frame by values of a given column
+
         :return: sorted mapping of values to dataframes
         """
         return OrderedDict(sorted(list(self.profile.groupby(column, sort=False))))
@@ -152,6 +159,7 @@ class CeterisParibus:
         """
         Workaround for dumping arrays with np.int64 type into json
         From: https://stackoverflow.com/a/50577730/7828646
+
 \        """
         if isinstance(o, np.int64):
             return int(o)

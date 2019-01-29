@@ -62,8 +62,11 @@ def _gower_dist(xi, xj, ranges, dtypes):
 def gower_distances(data, observation):
     """
     Return an array of distances between all observations and a chosen one
+
     Based on:
+
     https://sourceforge.net/projects/gower-distance-4python
+
     https://beta.vu.nl/nl/Images/stageverslag-hoven_tcm235-777817.pdf
     """
     if hasattr(data, 'dtypes'):

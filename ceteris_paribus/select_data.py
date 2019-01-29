@@ -8,6 +8,7 @@ from ceteris_paribus.gower import gower_distances
 def select_sample(data, y=None, n=15, seed=42):
     """
     Select sample from dataset.
+
     :param data: array with observations
     :param y: labels for observations
     :param n: size of the sample
@@ -40,6 +41,7 @@ def _select_subset_data(data, observation, variable_names=None, selected_variabl
 def select_neighbours(data, observation, y=None, variable_names=None, selected_variables=None, dist_fun='gower', n=20):
     """
     Select observations from dataset, that are similar to a given observation
+
     :param data: array with observations
     :param observation: reference observation for neighbours selection
     :param y: labels for observations
