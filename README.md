@@ -14,5 +14,7 @@ pip install git+https://github.com/ModelOriented/pyCeterisParibus
 ```
 or download the sources, enter the main directory and perform:
 ```
-python setup.py install
+https://github.com/ModelOriented/pyCeterisParibus.git
+cd pyCeterisParibus
+python setup.py install   # (alternatively use pip install .)
 ```
