@@ -12,9 +12,9 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
     """
     Calculate ceteris paribus profile
     :param explainer: a model to be explained
-    :param new_observation: a new observation with columns that corresponds to variables used in the model
+    :param new_observation: a new observation for which the profiles are calculated
     :param y: y true labels for `new_observation`. If specified then will be added to ceteris paribus plots
-    :param variables: variables selected for calculating profiles
+    :param variables: collection of variables selected for calculating profiles
     :param grid_points: number of points for profile
     :return: instance of CeterisParibus class
     """
@@ -90,10 +90,25 @@ class CeterisParibus:
         )
 
     def _single_variable_df(self, var_name, var_split):
+        """
+        Calculate profiles for a given variable
+        :param var_name: variable name
+        :param var_split: split values for the variable
+        :return: DataFrame with profiles for a given variable
+        """
         return pd.concat([self._single_observation_df(observation, var_name, var_split, profile_id)
                           for profile_id, observation in enumerate(self._new_observation)], ignore_index=True)
 
     def _single_observation_df(self, observation, var_name, var_split, profile_id):
+        """
+        Calculates the single profile
+        :param observation: observation for which the profile is calculated
+        :param var_name: variable name
+        :param var_split: split values for the variable
+        :param profile_id: profile id
+        :return: DataFrame with the calculated profile values
+        """
+        # grid_points and self._grid_point might differ for categorical variables
         grid_points = len(var_split)
         X = np.tile(observation, (grid_points, 1))
         X_dict = dict(zip(self._all_variable_names, X.T))

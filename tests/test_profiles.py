@@ -71,3 +71,27 @@ class TestProfiles(unittest.TestCase):
         self.assertEqual(len(splits_dict), 2)
         self.assertEqual(len(splits_dict['b']), self.cp._grid_points)
         np.testing.assert_array_equal(splits_dict['a'], [1, 2])
+
+    def test_single_observation_df(self):
+        self.cp._label = "xyz"
+        self.cp._all_variable_names = ["a", "b", "c"]
+        self.cp._predict_function = lambda arr: np.array([sum(row) for row in arr])
+        splits = np.array([1, 3, 15])
+        observation_df = self.cp._single_observation_df(np.array([1, 2, 10]), "a", splits, profile_id=42)
+        self.assertEqual(set(observation_df.columns), {"a", "b", "c", "_yhat_", "_vname_", "_label_", "_ids_"})
+        np.testing.assert_array_equal(observation_df["_yhat_"], [13, 15, 27])
+        np.testing.assert_array_equal(observation_df["a"], splits)
+        np.testing.assert_array_equal(observation_df["b"], [2] * 3)
+
+    def test_single_variable_df(self):
+        self.cp._label = "xyz"
+        self.cp._all_variable_names = ["a", "b", "c"]
+        self.cp._predict_function = lambda arr: np.array([sum(row) for row in arr])
+        splits = np.array([1, 3, 15])
+        self.cp._new_observation = np.array([[1, 2, 10]])
+        variable_df = self.cp._single_variable_df("a", splits)
+        self.assertEqual(set(variable_df.columns), {"a", "b", "c", "_yhat_", "_vname_", "_label_", "_ids_"})
+        np.testing.assert_array_equal(variable_df["_yhat_"], [13, 15, 27])
+        np.testing.assert_array_equal(variable_df["a"], splits)
+        np.testing.assert_array_equal(variable_df["b"], [2] * 3)
+        np.testing.assert_array_equal(variable_df["_ids_"], [0] * 3)
