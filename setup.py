@@ -25,4 +25,5 @@ setup(name=PACKAGE_NAME,
       author='Michał Kuźba',
       author_email='michal.kuzba@students.mimuw.edu.pl',
       packages=find_packages(exclude=['examples', 'tests']),
+      package_data={'ceteris_paribus': ['plots/ceterisParibusD3.js', 'plots/plot_template.html']},
       install_requires=get_requirements())
