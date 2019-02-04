@@ -2,7 +2,6 @@
 __pycache__/
 .coverage
 *.pyc
-/misc/
 /.ipynb_checkpoints/
 
 ceteris_paribus/plots/obs*.js
