@@ -35,12 +35,12 @@
         this.default_alpha_points = 0.9;
 
         this.default_size_ices = 2.5;
-        this.default_size_pdps = 3.5;
+        this.default_size_pdps = 6.5;
         this.default_alpha_ices = 0.4;
         this.default_alpha_pdps = 0.4;
 
         this.default_color = 'MidnightBlue';
-        this.default_color_pdps = 'grey';
+        this.default_color_pdps = 'red';
         this.default_no_colors = 3;
 
         this.default_font_size_titles = 14;

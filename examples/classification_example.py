@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from ceteris_paribus.explainer import explain
-from ceteris_paribus.plots.plots import plot_bokeh, plot_d3
+from ceteris_paribus.plots.plots import plot_bokeh, plot
 from ceteris_paribus.profiles import individual_variable_profile
 
 iris = load_iris()
@@ -28,4 +28,4 @@ if __name__ == "__main__":
     explainer_rf = explain(model, variable_names, data, labels, predict_function=predict_function)
     cp_profile = individual_variable_profile(explainer_rf, X[1], y=y[1])
     plot_bokeh(cp_profile)
-    plot_d3(cp_profile)
+    plot(cp_profile)
