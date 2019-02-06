@@ -30,5 +30,5 @@ def explain(model, variable_names, data=None, y=None, predict_function=None, lab
         else:
             label = 'unlabeled_model'
 
-    explainer = Explainer(model, variable_names, data, y, predict_function, label)
+    explainer = Explainer(model, list(variable_names), data, y, predict_function, label)
     return explainer

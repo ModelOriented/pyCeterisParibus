@@ -24,7 +24,7 @@ def _calculate_plot_variables(cp_profile, selected_variables):
         logging.warning("Selected variables are not subset of all variables. Parameter is ignored.")
         return cp_profile.selected_variables
     else:
-        return selected_variables
+        return list(selected_variables)
 
 
 def plot(cp_profile, *args, color=None,

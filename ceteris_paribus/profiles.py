@@ -49,7 +49,7 @@ class CeterisParibus:
         self._grid_points = grid_points
         self._label = explainer.label
         self._all_variable_names = list(explainer.var_names)
-        self.selected_variables = sorted(selected_variables)
+        self.selected_variables = list(selected_variables)
         self._new_observation = np.array(new_observation)
         if self._new_observation.ndim == 1:
             self._new_observation = np.array([self._new_observation])
@@ -117,7 +117,7 @@ class CeterisParibus:
         # grid_points and self._grid_point might differ for categorical variables
         grid_points = len(var_split)
         X = np.tile(observation, (grid_points, 1))
-        X_dict = dict(zip(self._all_variable_names, X.T))
+        X_dict = OrderedDict(zip(self._all_variable_names, X.T))
         df = pd.DataFrame.from_dict(X_dict)
         df[var_name] = var_split
         df['_yhat_'] = self._predict_function(df.values)
@@ -160,10 +160,8 @@ class CeterisParibus:
         Workaround for dumping arrays with np.int64 type into json
         From: https://stackoverflow.com/a/50577730/7828646
 
-\        """
-        if isinstance(o, np.int64):
-            return int(o)
-        raise TypeError
+        """
+        return int(o)
 
     def save_observations(self, profiles, filename):
         data = self.dump_observations(profiles)
