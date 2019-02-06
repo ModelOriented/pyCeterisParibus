@@ -23,7 +23,9 @@
 
         this.default_height = 400;
         this.default_width = 600;
-        this.default_margins = {top: 10, right: 10, bottom: 40, left: 40};
+        this.default_margins = {top: 10, right: 10, bottom: 40, left: 50};
+        this.default_margin_yaxis_title = 5;
+        this.default_tickPadding = 4;
 
         this.default_size_rugs = 1;
         this.default_alpha_rugs = 0.9;
@@ -34,33 +36,56 @@
         this.default_size_points = 3;
         this.default_alpha_points = 0.9;
 
-        this.default_size_ices = 2.5;
-        this.default_size_pdps = 6.5;
+        this.default_size_ices = 2;
+        this.default_size_pdps = 3.5;
         this.default_alpha_ices = 0.4;
         this.default_alpha_pdps = 0.4;
 
-        this.default_color = 'MidnightBlue';
-        this.default_color_pdps = 'red';
+        this.default_color = '#3F547F'; //'MidnightBlue';
+        this.default_color_pdps = 'grey';
         this.default_no_colors = 3;
 
+        this.default_font_size_plot_title = 16;
         this.default_font_size_titles = 14;
         this.default_font_size_legend = 12;
         this.default_font_size_axes = 12;
         this.default_font_size_tootlips = 10;
         this.default_font_size_table = 12;
 
+
+        this.default_font_color = '#444444';
+
         this.default_add_table = true;
+        this.default_plot_title = 'Ceteris Paribus plots per variable - predictions vs. variable values';
+        this.default_yaxis_title = 'y';
+
+        this.default_legend_keys_size = 7;
+
+        if (options.hasOwnProperty('legend_keys_size') && options.legend_keys_size !== null) {
+            this.legend_keys_size_ = options.legend_keys_size;
+        } else {
+            this.legend_keys_size_ = this.default_legend_keys_size;
+        }
+
 
         // handling user div
         if (typeof(div) == 'string') {
-            div = d3.select('#' + div);
+            div = document.getElementById(div);
         }
 
-        if (!div) {
-            throw new Error('Container for CeterisParibusPlot do not exist! Stopping execution.');
+
+        try {
+            if (!div) {
+                throw new Error('Container div for CeterisParibusPlot does not exist! Stopping execution.');
+            }
+        } catch (e) {
+            console.log(e.message)
+            //alert(e.message)
+            return;
         }
 
-        this.userDiv_ = div;
+        // take d3.selection, not pure html selection
+        this.userDiv_ = d3.select('#' + div.id);
 
 
         // handling data
@@ -102,25 +127,6 @@
 
 
         this.categorical_order_ = options.categorical_order;
-
-        if (options.hasOwnProperty('height') && options.height !== null) {
-            this.chartHeight_ = options.height;
-        } else {
-            this.chartHeight_ = this.default_height;
-        }
-
-        if (options.hasOwnProperty('width') && options.width !== null) {
-            this.chartWidth_ = options.width;
-        } else {
-            this.chartWidth_ = this.default_width;
-        }
-
-        this.visWidth_ = this.chartWidth_;
-        this.visHeight_ = this.chartHeight_;
-
-        if (this.add_table_) {
-            this.chartHeight_ = this.chartHeight_ / 2;
-        }
 
 
         //handling graphical options
@@ -196,6 +202,14 @@
         }
 
 
+        if (options.hasOwnProperty('font_size_plot_title') && options.font_size_plot_title !== null) {
+            this.font_size_plot_title_ = options.font_size_plot_title;
+            this.is_set_font_size_plot_title_ = true;
+        } else {
+            this.font_size_plot_title_ = this.default_font_size_plot_title;
+            this.is_set_font_size_plot_title__ = false;
+        }
+
         if (options.hasOwnProperty('font_size_titles') && options.font_size_titles !== null) {
             this.font_size_titles_ = options.font_size_titles;
             this.is_set_font_size_titles_ = true;
@@ -213,7 +227,7 @@
         }
 
         if (options.hasOwnProperty('font_size_axes') && options.font_size_axes !== null) {
-            this.font_size_axes_ = options.font_size_legend;
+            this.font_size_axes_ = options.font_size_axes;
             this.is_set_font_size_axes_ = true;
         } else {
             this.font_size_axes_ = this.default_font_size_axes;
@@ -244,13 +258,65 @@
         }
 
 
+        if (options.hasOwnProperty('plot_title') && options.plot_title !== null) {
+            this.plot_title_ = options.plot_title;
+        } else {
+            this.plot_title_ = this.default_plot_title;
+        }
+
+        if (options.hasOwnProperty('yaxis_title') && options.yaxis_title !== null) {
+            this.yaxis_title_ = options.yaxis_title;
+        } else {
+            this.yaxis_title_ = this.default_yaxis_title;
+        }
+
+
         this.show_profiles_ = options.show_profiles;
         this.show_observations_ = options.show_observations;
         this.show_rugs_ = options.show_rugs;
         this.show_residuals_ = options.show_residuals;
         this.aggregate_profiles_ = options.aggregate_profiles;
 
+
+        try {
+            this.scaleColorPrepare_();
+        } catch (e) {
+            console.log(e.message)
+            //alert(e.message)
+            return;
+        }
+
+        var scaleColor = this.scaleColor_;
+
+
+        this.init_size_calculations_ = true;
+
+        this.default_auto_resize = true;
+
+        if (options.hasOwnProperty('auto_resize') && options.auto_resize !== null) {
+            this.auto_resize_ = options.auto_resize;
+        } else {
+            this.auto_resize_ = this.default_auto_resize;
+        }
+
+        if (this.auto_resize_) {
+
+            //updateWIelkosci wsyzstkie zaleznie od tego jakie sa ustalone width i heigth
+        }
+
+        this.calculateSizeParameters_();
+
         // handling own CP div
+        var titleDivCP = this.userDiv_.append('div')
+            .attr('class', 'ceterisParibusD3 titleDivCP')
+            .style('height', this.titleDivHeight_ + 'px')
+            .style('width', this.visWidth_ + 'px')
+            .style('display', "table")
+            .style('text-align', 'left')
+            .style('font', 'bold ' + this.font_size_plot_title_ + 'px sans-serif')
+            .text(this.plot_title_);
+
+        titleDivCP.style('color', this.default_font_color);
 
         if (this.userDiv_.select('.mainDivCP')) {
             this.userDiv_.select('.mainDivCP').remove();
@@ -260,66 +326,74 @@
         var mainDivCP = this.userDiv_.append('div')
             .attr('class', 'ceterisParibusD3 mainDivCP')
             .style('height', this.chartHeight_ + 'px')
-            .style('width', this.chartWidth_ + 'px')
+            .style('width', this.visWidth_ + 'px')
             .style('display', "table")
-            .append('table').append('tbody').append('tr');
+            .append('table').attr('cellspacing', 0).attr('cellpadding', 0).style('border-collapse', 'collapse')
+            .style('padding', 0 + 'px').style('border-spacing', 0 + 'px')
+            .append('tbody').append('tr');
 
-        this.plotWidth_ = this.is_color_variable_ ? this.chartWidth_ * 0.8 : this.chartWidth_;
 
-        var plotDivCP = mainDivCP.append('td').append('div').attr('class', 'divTable plotDivCP')
+        var plotDivCP = mainDivCP.append('td').style('border-spacing', '0px').append('div').attr('class', 'divTable plotDivCP')
             .style('display', 'table')
             .append('div').attr('class', 'divTableBody plotDivTableBody').style('display', 'table-row-group')
             .style('height', this.chartHeight_ + 'px').style('width', this.plotWidth_ + 'px');
 
-
-        this.scaleColorPrepare_();
-
-        var scaleColor = this.scaleColor_;
 
         if (this.is_color_variable_) {
 
             var legendDivCP = mainDivCP.append('td').append('div').attr('class', 'divTable legendDivCP')
                 .style('display', 'table')
                 .append('div').attr('class', 'divTableBody').style('display', 'table-row-group')
-                .style('height', this.chartHeight_ + 'px').style('width', (this.chartWidth_ - this.plotWidth_) + 'px');
+                .style('height', this.chartHeight_ + 'px').style('width', this.legendWidth_ + 'px');
 
-            var legendAreaCP = legendDivCP.append('svg').attr('height', this.chartHeight_).attr('width', (this.chartWidth_ - this.plotWidth_))
-                .append('g').attr('class', 'legendAreaCP');
+            var legendAreaCP = legendDivCP.append('svg').attr('height', this.chartHeight_).attr('width', this.legendWidth_)
+                .append('g').attr('transform', 'translate(10,0)').attr('class', 'legendAreaCP');
 
             legendAreaCP.append("text").attr('class', 'legendTitle')
-                .attr('y', this.chartHeight_ * 0.1).style('font', this.font_size_legend_ + 'px sans-serif').text(this.color_ + ":");//this.chartHeight_/2*0.9
+                .attr('y', this.chartHeight_ * 0.1).style('font', this.font_size_legend_ + 'px sans-serif').text(this.color_ + ":");
 
             var legendKeys = legendAreaCP.append("g").attr('class', 'legendKeysGroup')
-                .attr("text-anchor", "start").attr("transform", "translate(" + ((this.chartWidth_ - this.plotWidth_) * 0.1) + "," + this.chartHeight_ * 0.2 + ")")
+                .attr("text-anchor", "start").attr("transform", "translate(" + (this.legendWidth_ * 0.1) + "," + this.chartHeight_ * 0.2 + ")")
                 .selectAll("g").data(this.scaleColor_.domain()).enter().append("g")
                 .attr("transform", function (d, i) {
                     return "translate(0," + i * 20 + ")";
                 });
 
-            var rectSize = 10;
-            legendKeys.append("rect").attr("x", -rectSize).attr("width", rectSize).attr("height", rectSize).attr("fill", function (d) {
-                return scaleColor(d)
-            });
 
-            legendKeys.append("text").attr("x", 5).attr("y", rectSize / 2).attr("dy", "0.32em").style('font', this.font_size_legend_ + 'px sans-serif').text(function (d) {
+            legendKeys.append("rect").attr("x", -this.legend_keys_size_).attr("width", this.legend_keys_size_).attr("height", this.legend_keys_size_)
+                .style('stroke', 'grey').style('stroke-width', '0.5px')
+                .attr("fill", function (d) {
+                    return scaleColor(d)
+                });
+
+            legendKeys.append("text").attr("x", 5).attr("y", this.legend_keys_size_ / 2).attr("dy", "0.32em").style('font', this.font_size_legend_ + 'px sans-serif').text(function (d) {
                 return d;
             });
 
             this.legendDivCP_ = legendDivCP;
 
+            d3.select('.legendDivCP').style('overflow', 'scroll')
+
         }
 
 
         this.mainDivCP_ = mainDivCP;
+        this.mainDivCP_.style('color', this.default_font_color);
+        this.mainDivCP_.selectAll('svg text').style('color', this.default_font_color);
+
         this.plotDivCP_ = plotDivCP;
 
         //tooltips
         //jakby cos nie dzialalo to sprawdzic czy dobrze ustawione sa te style css dla div
-        var tooltipDiv = plotDivCP.append("div").attr("class", "tooltip").style("opacity", 0).style("position", 'absolute').style("height", 'auto').style("width", 'auto')
-            .style("padding", '5px').style("text-align", 'left').style("background", 'white').style("border", '3px').style("border-radius", '2px').style("box-shadow", '0px 0px 10px 3px rgba(0,0,0,0.5)')
+        var tooltipDiv = plotDivCP.append("div").attr("class", "tooltip").style("opacity", 0).style("position", 'absolute')
+            .style("height", 'auto').style("width", 'auto')
+            .style("padding", '5px').style("text-align", 'left').style("background", 'white').style("border", '1px solid #BFBFBF')
+            .style("border-radius", '1px').style("box-shadow", '2px 2px 1px rgba(0,0,0,0.5)')
             .style("pointer-events", 'none').style('font', this.font_size_tootlips_ + 'px sans-serif');
 
         this.tooltipDiv_ = tooltipDiv;
+
+        //this.calculateAxesFontandMargins_()
 
         this.createCells_();
 
@@ -341,22 +415,25 @@
             this.addEventListenerResize_(this.resizePlotHandler_);
         }
 
+
+        this.CP_id_ = 'CP' + this.generateUniqueId_();
         // adding table with observations
 
         if (this.add_table_) {
             this.createTable_();
         }
 
+
     };
 
     CeterisParibusPlot.prototype.createCells_ = function () {
 
-        var nCells = this.variables_.length,
+        var nCells = this.nCells_,
             cellIterator = 0,
-            rows = Math.floor(Math.sqrt(nCells)),
-            cols = Math.floor(Math.ceil(nCells / rows)),
-            cellsHeight = Math.floor(this.chartHeight_ / rows),
-            cellsWidth = Math.floor(this.plotWidth_ / cols),
+            rows = this.rows_,
+            cols = this.cols_,
+            cellsHeight = this.cellsHeight_,
+            cellsWidth = this.cellsWidth_,
             plotDivCP = this.plotDivCP_,
             variables = this.variables_,
             categorical_order = this.categorical_order_,
@@ -367,14 +444,20 @@
             size_rugs = this.size_rugs_,
             font_size_titles = this.font_size_titles_,
             font_size_axes = this.font_size_axes_,
-            variablesDict = this.variablesDict_;
+            variablesDict = this.variablesDict_,
+            yaxis_title = this.yaxis_title_,
+            margin_yaxis_title = this.default_margin_yaxis_title,
+            tickPaddingSize = this.default_tickPadding,
+            yAxisTitleSize = this.yAxisTitleSize_,
+            svgHeight = this.svgHeight_,
+            length_rugs = this.length_rugs_,
+            widthAvail = this.widthAvail_,
+            heightAvail = this.heightAvail_;
 
-        this.rows_ = rows;
-        this.cols_ = cols;
 
         var cells = plotDivCP.selectAll('.cellRow').data(d3.range(1, rows + 1)).enter().append('div')
             .attr('class', 'divTableRow cellRow').style('display', 'table-row')
-            .style('height', cellsHeight + 'px').style('width', '100%')
+            .style('width', '100%').style('height', cellsHeight + 'px')
             .selectAll('.cell').data(d3.range(1, cols + 1)).enter().append('div')
             .attr('class', function (d, i) {
                 cellIterator = cellIterator + 1;
@@ -387,27 +470,14 @@
             .style('display', 'table-cell')
             //.style('border-right', 'solid #c4c4c4 1px')
             //.style('border-bottom', 'solid #c4c4c4 1px')
-            .style('height', cellsHeight + 'px').style('width', cellsWidth + 'px')
+            .style('width', cellsWidth + 'px').style('height', cellsHeight + 'px')
             .append('div').attr('class', 'divTable').style('display', 'table')
             .append('div').attr('class', 'divTableBody cellBody').style('display', 'table-row-group')
-            .style('height', cellsHeight + 'px').style('width', cellsWidth + 'px');
+            .style('width', cellsWidth + 'px').style('height', cellsHeight + 'px');
 
-        //cells = this.userDiv_.selectAll(".cell");
+        cells = this.userDiv_.selectAll('.cellBody');
 
-        this.cellsHeight_ = cellsHeight;
-        this.cellsWidth_ = cellsWidth;
-
-        // scale Y
-        var widthAvail = this.cellsWidth_ - this.default_margins.left - this.default_margins.right,
-            heightAvail = this.cellsHeight_ * 0.95 - this.default_margins.top - this.default_margins.bottom; // 0.95 because of svg height attr, should be in var later
-
-        this.widthAvail_ = widthAvail;
-        this.heightAvail_ = heightAvail;
-
-        var length_rugs = size_rugs * d3.min([this.heightAvail_, this.widthAvail_]) * 0.1; // 0.1 - maximum length of rugs is 10% of Y/X axis height/width
-        this.length_rugs_ = length_rugs;
-        var scaleY = d3.scaleLinear().rangeRound([heightAvail - length_rugs - 5, 0]);             //this.length_rugs_
-
+        var scaleY = d3.scaleLinear().rangeRound([this.heightAvail_ - this.length_rugs_ - 5, 0]);      // czemu - 5?
 
         var minScaleY = d3.min([d3.min(data, function (d) {
                 return d["_yhat_"];
@@ -427,7 +497,6 @@
         //var scaleYshift =  Math.abs(scaleY.domain()[1] - scaleY.invert(size_rugs));
         //scaleY.domain([d3.min(data, function(d) { return d["_yhat_"]; }) - scaleYshift, d3.max(data, function(d) { return d["_yhat_"]; })]);
 
-
         this.scaleY_ = scaleY;
 
         cells.each(
@@ -436,21 +505,29 @@
                 if (variables[i]) { // do not plot chart for empty cell
 
                     // cell title
-                    d3.select(this).append('div').style('background-color', '#c4c4c4').attr('class', 'divTableRow').style('display', 'table-row')
-                        .append('div').attr('class', 'divTableCell titleCell').style('display', 'table-cell')
-                        .style('text-align', 'center').style('font', font_size_titles + 'px sans-serif').text(variables[i]);
-                    //TU .attr('height', cellsHeight*0.05), ale lepiej w sumie jak jest, ze im mniejsza/wieksza czcionka tym wiekszy/mniejszy div
+                    d3.select(this).append('div').style('background-color', '#f6f6f6')
+                        .attr('class', 'divTableRow titleRow').style('display', 'table-row')
+                        .append('div').attr('class', 'divTableCell titleCell').style('display', 'table-cell').style('border', '1px solid #DDDDDD')
+                        .style('text-align', 'center').style('font', font_size_titles + 'px sans-serif').text(variables[i])
+                    //.attr('height', cellsHeight*0.05) //, ale lepiej w sumie jak jest, ze im mniejsza/wieksza czcionka tym wiekszy/mniejszy div
+
 
                     // cell chart area
                     var chartArea = d3.select(this).append('div').attr('class', 'divTableRow').style('display', 'table-row')
+                    //.style('max-height', svgHeight +'px').style('height', svgHeight+'px')
                         .append('div').attr('class', 'divTableCell').style('display', 'table-cell')
-                        .append('svg').attr('height', cellsHeight * 0.95).attr('width', cellsWidth).attr('class', 'cellSvg')
+                        //.style('max-height', svgHeight+'px')
+                        //.style('height', svgHeight+'px')
+                        .append('svg').attr('height', svgHeight).attr('width', cellsWidth).attr('class', 'cellSvg')
                         .append("g").attr("transform", "translate(" + margins.left + "," + margins.top + ")")
                         .attr('class', 'cellMainG cellMainG-' + variablesDict[variables[i]]); //.replace(".","_")
 
+                    chartArea.append("g").attr('class', 'yaxis_title_g').attr("transform", "translate(" + (-margins.left + yAxisTitleSize) + "," + heightAvail / 2 + ")" +
+                        ' rotate(-90)')
+                        .append('text').text(yaxis_title).style('text-anchor', 'middle').style('font', font_size_axes + 'px sans-serif');
 
                     chartArea.append("g").attr("class", "axisY").style('font', font_size_axes + 'px sans-serif')
-                        .call(d3.axisLeft(scaleY).tickSizeOuter(0).tickSizeInner(-widthAvail).tickPadding(10).ticks(5).tickFormat(d3.format("d")));
+                        .call(d3.axisLeft(scaleY).tickSizeOuter(0).tickSizeInner(-widthAvail).tickPadding(tickPaddingSize).ticks(3).tickFormat(d3.format("d")));
 
 
                     // getting only data prepared for given variable as x variable
@@ -472,7 +549,7 @@
 
                         chartArea.append("g").attr("transform", "translate(0," + heightAvail + ")").style('font', font_size_axes + 'px sans-serif')
                             .attr("class", "axisX")
-                            .call(d3.axisBottom(scaleX).tickSizeOuter(0).tickSizeInner(-heightAvail).tickPadding(10).ticks(3).tickFormat(d3.format("d")));
+                            .call(d3.axisBottom(scaleX).tickSizeOuter(0).tickSizeInner(-heightAvail).tickPadding(tickPaddingSize).ticks(3).tickFormat(d3.format("d")));
 
 
                     }
@@ -483,6 +560,7 @@
                     })[0] == 'string') {
 
                         if (categorical_order) {
+
 
                             if (categorical_order.filter(function (x) {
                                 return (x.variable == variables[i])
@@ -498,8 +576,10 @@
                                         domain.push(order[key]);
                                     }
                                 }
+
                                 var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]);
                                 scaleX.domain(domain);
+
                             } else {
                                 var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]);
                                 var domain = d3.nest().key(function (d) {
@@ -524,7 +604,7 @@
 
                         chartArea.append("g").attr("transform", "translate(0," + heightAvail + ")")
                             .attr("class", "axisX").style('font', font_size_axes + 'px sans-serif')
-                            .call(d3.axisBottom(scaleX).tickSizeOuter(0).tickSizeInner(-heightAvail).tickPadding(2).ticks(3))
+                            .call(d3.axisBottom(scaleX).tickSizeOuter(0).tickSizeInner(-heightAvail).tickPadding(tickPaddingSize).ticks(3))
                             .selectAll('text').attr('transform', 'rotate(-20)')
                             .style("text-anchor", "end");
                         //.attr("dy", "-.10em");
@@ -536,7 +616,6 @@
                         throw new Error(msg);
                     }
 
-
                     scalesX[variables[i]] = scaleX;
 
                     // artificial beginning of the axes
@@ -544,8 +623,9 @@
                         .attr("transform", "translate(0," + heightAvail + ")")
                         .append("line")
                         .attr('class', 'axis_start_line_x')
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', '1.5px')
+                        .attr('stroke', 'grey')
+                        .attr('stroke-width', '1px')
+                        .style('stroke-opacity', 0.5)
                         .style("stroke-linecap", 'round')
                         .attr('y1', 0 + 0.5)  //0.5 is artificial, related to automatic axis shift about 0.5 (look at d attr for axis path)
                         .attr('y2', 0 + 0.5)
@@ -556,9 +636,10 @@
                         .attr("transform", "translate(0," + heightAvail + ")")
                         .append("line")
                         .attr('class', 'axis_start_line_y')
-                        .attr('stroke', 'black')
+                        .attr('stroke', 'grey')
                         .style("stroke-linecap", 'round')
-                        .style('stroke-width', '1.5px')
+                        .style('stroke-width', '1px')
+                        .style('stroke-opacity', 0.5)
                         .attr('y1', 0)
                         .attr('y2', -length_rugs - 5)
                         .attr('x1', 0 + 0.5)
@@ -570,8 +651,9 @@
 
         // customizing axes
         this.userDiv_.selectAll('.domain')
-            .style('stroke', 'black')
-            .style('stroke-width', '1.5px')
+            .style('stroke', 'grey')
+            .style('stroke-width', '1px')
+            .style('stroke-opacity', 0.5)
 
         this.userDiv_.selectAll('.tick line')
             .style('stroke', 'grey')
@@ -631,14 +713,8 @@
 
     CeterisParibusPlot.prototype.icePlot_ = function (mainG, dataVar, dataObs, variable) {
 
-        //var no_instances; //this.no_instances or whatever
-        //if(!no_instances){ no_instances = 1;}else{no_instances = no_instances + 1;}
-        //.attr('id', 'icePlot'+no_instances) remember that class will be overwrite if you do attr(class,).attr(class,)
 
         var g = mainG.append("g").attr("class", 'icePlot'),
-            per_id_model = d3.nest().key(function (d) {
-                return d['_ids_'] + '|' + d['_label_']
-            }).entries(dataVar),
             scaleY = this.scaleY_,
             scaleColor = this.scaleColor_,
             scaleX = this.scalesX_[variable],
@@ -650,6 +726,21 @@
             is_color_variable = this.is_color_variable_,
             formatPredTooltip = this.formatPredTooltip_;
 
+        var per_id_model = d3.nest()
+            .key(function (d) {
+                return d['_ids_'] + '|' + d['_label_']
+            })
+            .sortValues(function (a, b) {
+                var temp;
+                if (typeof scaleX.domain()[0] == 'number') {
+                    temp = d3.ascending(scaleX(parseFloat(a[variable])), scaleX(parseFloat(b[variable])));
+                } else {
+                    temp = d3.ascending(scaleX(a[variable]), scaleX(b[variable]));
+                }
+                return temp;
+            })
+            .entries(dataVar);
+
         var line = d3.line()
             .x(function (d) {
                 return scaleX(d[variable]);
@@ -657,7 +748,6 @@
             .y(function (d) {
                 return scaleY(d["_yhat_"]);
             });
-
 
         var iceplotegroups = g.selectAll('g.iceplotgroup').data(per_id_model).enter().append('g').attr('class', 'iceplotgroup');
 
@@ -743,7 +833,7 @@
                     "y_pred: " + d3.format(formatPredTooltip)(d['_yhat_']) + "<br/>" +
                     variable + ": " + d[variable] + "<br/>"
                 )
-                    .style("left", (d3.event.pageX) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
+                    .style("left", (d3.event.pageX + 15) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta  + 15 by nie nachodzil kursor na tooltip
                     .style("top", (d3.event.pageY) + "px")
                     .transition()
                     .duration(300)
@@ -819,25 +909,25 @@
         var pointplots = g.selectAll('circle.point').data(per_id_model).enter().append("circle").attr('class', 'point')
         //.attr('id', function(x) {return 'linechart-' + x.key})
             .attr("fill", function (x) {
-                    if (color_points) {
-                        return color_points;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_points) {
+                    return color_points;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_points) {
-                        return color_points;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_points) {
+                    return color_points;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("stroke-width", '1px')
@@ -867,7 +957,7 @@
                     "y_pred: " + d3.format(formatPredTooltip)(dataPoint['_yhat_']) + "<br/>" +
                     variable + ": " + dataPoint[variable] + "<br/>"
                 )
-                    .style("left", (d3.event.pageX) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
+                    .style("left", (d3.event.pageX + 15) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
                     .style("top", (d3.event.pageY) + "px")
                     .transition()
                     .duration(300)
@@ -934,25 +1024,25 @@
         g.selectAll('line.rugx').data(per_id_model).enter().append("line").attr('class', 'rugx')
         //.attr('id', function(x) {return 'rugxchart-' + x.key})
             .attr("fill", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("opacity", alpha_rugs)
@@ -973,25 +1063,25 @@
         g.selectAll('line.rugy').data(per_id_model).enter().append("line").attr('class', 'rugy')
         //.attr('id', function(x) {return 'rugychart-' + x.key})
             .attr("fill", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("opacity", alpha_rugs)
@@ -1033,25 +1123,25 @@
         var residuallines = g.selectAll('line.residualline').data(id_model).enter().append("line").attr('class', 'residualline')
         //.attr('id', function(x) {return 'residuallinechart-' + x})
             .attr("fill", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("opacity", alpha_residuals)
@@ -1082,25 +1172,25 @@
         var residualpoints = g.selectAll('circle.residualpoint').data(id_model).enter().append("circle").attr('class', 'residualpoint')
         //.attr('id', function(x) {return 'residualpointchart-' + x})
             .attr("fill", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("stroke-width", '1px')
@@ -1131,7 +1221,7 @@
                     "<b> residual: " + d3.format(formatPredTooltip)(dataPoint['_y_'] - dataPoint['_yhat_']) + "</b> <br/>" +
                     variable + ": " + dataPoint[variable] + "<br/>"
                 )
-                    .style("left", (d3.event.pageX) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
+                    .style("left", (d3.event.pageX + 15) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
                     .style("top", (d3.event.pageY) + "px")
                     .transition()
                     .duration(300)
@@ -1217,6 +1307,15 @@
                 .key(function (d) {
                     return d[variable];
                 })
+                .sortKeys(function (a, b) {
+                    var temp;
+                    if (typeof scaleX.domain()[0] == 'number') {
+                        temp = d3.ascending(scaleX(parseFloat(a)), scaleX(parseFloat(b)));
+                    } else {
+                        temp = d3.ascending(scaleX(a), scaleX(b));
+                    }
+                    return temp;
+                })
                 .rollup(function (leaves) {
                     return d3.mean(leaves, function (d) {
                         return d['_yhat_'];
@@ -1232,6 +1331,15 @@
                 .key(function (d) {
                     return d[variable];
                 })
+                .sortKeys(function (a, b) {
+                    var temp;
+                    if (typeof scaleX.domain()[0] == 'number') {
+                        temp = d3.ascending(scaleX(parseFloat(a)), scaleX(parseFloat(b)));
+                    } else {
+                        temp = d3.ascending(scaleX(a), scaleX(b));
+                    }
+                    return temp;
+                })
                 .rollup(function (leaves) {
                     return d3.median(leaves, function (d) {
                         return d['_yhat_'];
@@ -1239,7 +1347,6 @@
                 })
                 .entries(dataVar);
         }
-
 
         var line = d3.line()
             .x(function (d) {
@@ -1274,6 +1381,7 @@
                 return line(x.values)
             });
 
+
         var pdppoints = pdpgroups.append('g').attr('class', 'pdppointgroup').selectAll('circle.pdpplotpoint').data(function (d) {
             return d.values
         }).enter()
@@ -1302,7 +1410,7 @@
                     "y_pred: " + d3.format(formatPredTooltip)(d.value) + "<br/>" +
                     variable + ": " + d.key + "<br/>"
                 )
-                    .style("left", (d3.event.pageX) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
+                    .style("left", (d3.event.pageX + 15) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
                     .style("top", (d3.event.pageY) + "px")
                     .transition()
                     .duration(300)
@@ -1416,12 +1524,19 @@
             return obj;
         })[0] == 'string') {
             //console.log('color variable is categorical')
-            this.scaleColor_ = d3.scaleOrdinal(defaultPaletteCat);
-            this.scaleColor_.domain(d3.nest().key(function (d) {
+            var domainCat = d3.nest().key(function (d) {
                 return d[color]
             }).entries(dataObs).map(function (x) {
                 return x.key
-            }));
+            });
+            //domainCat = [1,2,3,4,5,6,7,8,9,10,11,12]
+            if (defaultPaletteCat.length < domainCat.length) {
+                throw new Error('Color variable has too many categories. Available: ' + defaultPaletteCat.length + ', given: ' + domainCat.length + '. Reduce no of categories.');
+            } else {
+                this.scaleColor_ = d3.scaleOrdinal(defaultPaletteCat);
+                this.scaleColor_.domain(domainCat);
+            }
+
         }
         else if (typeof dataObs.map(function (x) {
             return x[color]
@@ -1559,17 +1674,24 @@
             this.userDiv_.select('.tableDivCP').remove();
         }
 
-
         var tableDivCP = this.userDiv_.append('div')
             .attr('class', 'ceterisParibusD3 tableDivCP')
             .style('max-height', this.chartHeight_ + 'px')
-            .style('width', this.chartWidth_ + 'px')
-            .style('display', "table")
+            .style('width', this.visWidth_ + 'px')
+            .style('height', this.chartHeight_ + 'px')
+            //.style('max-width', this.chartWidth_+'px') //new
+            //.style('display',"table") // to bylo dodane  w jakims celu, to chyba rozwiazalo problem polozenia? czy czegos, ale psuje co innego scrollx
             .style('font', this.font_size_table_ + 'px sans-serif');
 
         var tableCP = tableDivCP.append('table').attr('class', 'tableCP compact hover row-border nowrap') //display - css class from DataTable, nowrap - proper sizing of rows when little space
+            .attr('id', 'tableCP_' + this.CP_id_)
+            .attr('width', '100%')
+            //.attr('width', '100%')
+            .attr('cellspacing', 0)
             .style('max-height', this.chartHeight_ + 'px')
-            .style('width', this.chartWidth_ + 'px');
+        //.style('max-width', this.chartWidth_+'px') //new
+        // .style('width', this.chartWidth_+'px');
+
 
         var tableHead = tableCP.append('thead').append('tr')
             .selectAll('th').data(headers).enter().append("th").text(function (d) {
@@ -1601,8 +1723,9 @@
                 return d;
             });
 
-        tableDivCP.style('min-height', tableCP.property('clientHeight') + 'px');
+        //tableDivCP.style('min-height', tableCP.property('clientHeight') + 'px');
         //adding events for rows
+
 
         tableRows.on("mouseover", function (d) {
 
@@ -1751,6 +1874,25 @@
 
         });
 
+
+        // trzeba dodac wydarzenie klik
+        //enable_hovering_over = false;
+        //wiersz pozostaje na szaro lub czcionka na jakis kolor
+        //obserwacje powiazane sa wyswietlane na stale
+        //nie jest kasowane wyswietlanie innych wierszy
+
+        // trzeba dodac wydarzenie odklik
+        // to jest jedno wydarzenie co wyzej, trzeba by zrobic zmienne? atrybuty? per kazdy row tabeli by srpawdzic czy on byl juz kliknuety czy nie
+        // nadal enable_hovering_over = false; jedynie ze zaden z wierszy nie jest klikniety wtedy wtedy enable hovering
+        //wiersz pozostaje na szaro lub czcionka na jakis kolor
+        //obserwacje powiazane sa wyswietlane na stale
+        //nie jest kasowane wyswietlanie innych wierszy
+
+        // trzeba dodac wydarzenie ogolne - odklikanie dwar razy robi:
+        // enable_hovering_over = true; - mozna juz hoverowac
+        // kasuje wszystkie klikniecia
+
+
         this.tableDivCP_ = tableDivCP;
 
         // to use scrollX nicely https://datatables.net/examples/basic_init/scroll_x.html
@@ -1758,25 +1900,39 @@
         tableDivCP.selectAll('td').style('white-space', 'nowrap');
 
 
+        //var no_instances; //this.no_instances or whatever
+        //if(!no_instances){ no_instances = 1;}else{no_instances = no_instances + 1;}
+        //.attr('id', 'icePlot'+no_instances) remember that class will be overwrite if you do attr(class,).attr(class,)
+
+        var tableId = '#' + 'tableCP_' + this.CP_id_;
+
         var dt_options = {
             "scrollX": true,
             "paging": false,
-            "scrollY": 200,
-            "order": [[9, "asc"]],
+            "scrollY": 200, //cokolwiek tu moze byc scrollResize dopasuje wysokosc tabeli
+            "scrollResize": true,
             "scrollCollapse": true,
-            "dom": '<"toolbar">frtip', // for title of the table
-            "retrieve": true // to be able to ca,, DT multiple times
+            //"info": true,
+            //"lengthChange": false, //removing Showing 1 of 15 entries
+            "dom": '<"toolbar">frtip' // for title of the table
+            //"retrieve": true // to be able to ca,, DT multiple times,
         }
-
-        dt_options.scrollY = this.chartHeight_ * 0.8; //scrollY parameter sets only table height without header
+        //dt_options.scrollY = this.chartHeight_ - 4*20; //scrollY parameter sets only table height without header, 4 elementy kolo 20 pikseli maja (header, footer, search, name)
         // cool table look
         $(document).ready(function () {
-            $('.tableCP').DataTable(dt_options);
-            $("div.toolbar").html('<b>Dataset:</b>'); // for title of the table
+
+            $(tableId).DataTable(dt_options);
+            $("div.toolbar").html('<b>Dataset:</b> '); // for title of the table
+
         });
+
+
+        this.tableDivCP_.style('color', this.default_font_color);
+
         // attention: i don't have to create proper html table to do this, i can make it from JS object using DT options
         // look here https://datatables.net/examples/data_sources/js_array.html
-
+        // tableDivCP.selectAll('.dataTables_wrapper').style('max-width', '100%')//
+        //$(".dataTables_wrapper").css("width", '600px')
     };
 
 
@@ -1794,21 +1950,6 @@
 
     };
 
-    CeterisParibusPlot.prototype.changeSizeParameters_ = function () {
-
-        this.plotWidth_ = this.is_color_variable_ ? this.chartWidth_ * 0.8 : this.chartWidth_;
-
-        this.cellsHeight_ = Math.floor(this.chartHeight_ / this.rows_);
-        this.cellsWidth_ = Math.floor(this.plotWidth_ / this.cols_);
-
-
-        //console.log('old h avail ', this.heightAvail_);
-
-        this.widthAvail_ = this.cellsWidth_ - this.default_margins.left - this.default_margins.right,
-            this.heightAvail_ = this.cellsHeight_ * 0.95 - this.default_margins.top - this.default_margins.bottom;
-        this.length_rugs_ = this.size_rugs_ * d3.min([this.heightAvail_, this.widthAvail_]) * 0.1;
-
-    };
 
     CeterisParibusPlot.prototype.updateXYScalesAndAxes_ = function () {
 
@@ -1822,7 +1963,7 @@
             return;
         })
         this.cellsG_.selectAll('.axisY').call(d3.axisLeft(this.scaleY_).tickSizeOuter(0)
-            .tickSizeInner(-this.widthAvail_).tickPadding(10).ticks(5).tickFormat(d3.format("d")));
+            .tickSizeInner(-this.widthAvail_).tickPadding(this.default_tickPadding).ticks(3).tickFormat(d3.format("d")));
 
         // x axes
 
@@ -1842,13 +1983,13 @@
                 this.mainDivCP_.select(classToTake).select('.axisX')
                     .attr("transform", "translate(0," + this.heightAvail_ + ")")
                     .call(d3.axisBottom(this.scalesX_[this.variables_[i]]).tickSizeOuter(0).tickSizeInner(-this.heightAvail_)
-                        .tickPadding(10).ticks(3).tickFormat(d3.format("d")));
+                        .tickPadding(this.default_tickPadding).ticks(3).tickFormat(d3.format("d")));
             }
             else if (typeof this.scalesX_[this.variables_[i]].domain()[0] == 'string') {
                 this.scalesX_[this.variables_[i]] = this.scalesX_[this.variables_[i]].rangeRound([0 + this.length_rugs_, this.widthAvail_]);
                 this.mainDivCP_.select(classToTake).select('.axisX')
                     .attr("transform", "translate(0," + this.heightAvail_ + ")")
-                    .call(d3.axisBottom(this.scalesX_[this.variables_[i]]).tickSizeOuter(0).tickSizeInner(-this.heightAvail_).tickPadding(2).ticks(3))
+                    .call(d3.axisBottom(this.scalesX_[this.variables_[i]]).tickSizeOuter(0).tickSizeInner(-this.heightAvail_).tickPadding(this.default_tickPadding).ticks(3))
                     .selectAll('text').attr('transform', 'rotate(-20)')
                     .style("text-anchor", "end");
             }
@@ -1864,13 +2005,14 @@
 
         // customizing axes
         this.userDiv_.selectAll('.domain')
-            .style('stroke', 'black')
-            .style('stroke-width', '1.5px');
+            .style('stroke', 'grey')
+            .style('stroke-width', '1px')
+            .style('stroke-opacity', 0.5)
 
         this.userDiv_.selectAll('.tick line')
             .style('stroke', 'grey')
             .style('stroke-width', '1px')
-            .style('stroke-opacity', 0.2);
+            .style('stroke-opacity', 0.2)
 
 
     };
@@ -1878,13 +2020,45 @@
 
     CeterisParibusPlot.prototype.updateCellsStructure_ = function () {
 
+
+        //this.userDiv_.select('.tableDivCP') // czy taka referencja this.tableDivCP_.?? - wszedzie ponizej sie zastanowic jakby nie dzialalo
+
+        this.userDiv_.select('.titleDivCP')
+            .style('height', this.titleDivHeight_ + 'px')
+            .style('width', this.visWidth_ + 'px');
+
         this.userDiv_.select('.mainDivCP')
             .style('height', this.chartHeight_ + 'px')
-            .style('width', this.chartWidth_ + 'px');
+            .style('width', this.visWidth_ + 'px')
 
-        this.userDiv_.select('.plotDivTableBody')
-            .style('height', this.chartHeight_ + 'px')
-            .style('width', this.plotWidth_ + 'px');
+
+        if (this.add_table_) {
+
+            // usunac jak pewnosc ze dziala resize tabeli
+            //var tableId = '#'+'tableCP_'+this.CP_id_;
+            //$(tableId).DataTable.destroy();
+            //this.createTable_()
+            //this.tableDivCP_.select('.tableCP').property('clientHeight');
+            //this.tableDivCP_.style('min-height', this.tableDivCP_.select('.tableCP').property('clientHeight')+'px');
+
+            this.userDiv_.select('.tableDivCP') // czy taka referencja this.tableDivCP_.??
+                .style('max-height', this.chartHeight_ + 'px')
+                .style('width', this.visWidth_ + 'px')
+                .style('height', this.chartHeight_ + 'px'); // must have for scrollResize working
+
+            this.userDiv_.select('.tableCP')
+                .style('max-height', this.chartHeight_ + 'px');
+
+        }
+
+
+        this.userDiv_.selectAll('.yaxis_title_g').attr("transform", "translate(" + (-this.default_margins.left + this.yAxisTitleSize_) + "," + this.heightAvail_ / 2 + ")" +
+            ' rotate(-90)')
+
+        this.userDiv_.selectAll('.cellMainG').attr("transform", "translate(" + this.default_margins.left + "," + this.default_margins.top + ")")
+
+        this.userDiv_.selectAll('.cellSvg')
+            .attr('height', this.svgHeight_).attr('width', this.cellsWidth_);
 
         this.plotDivCP_.selectAll('.cellRow')
             .style('height', this.cellsHeight_ + 'px');
@@ -1895,14 +2069,10 @@
         this.plotDivCP_.selectAll('.cellBody')
             .style('height', this.cellsHeight_ + 'px').style('width', this.cellsWidth_ + 'px');
 
-        this.userDiv_.selectAll('.cellSvg')
-            .attr('height', this.cellsHeight_ * 0.95).attr('width', this.cellsWidth_);
-
-        this.tableDivCP_
+        this.userDiv_.select('.plotDivTableBody')
             .style('height', this.chartHeight_ + 'px')
-            .style('width', this.chartWidth_ + 'px');
+            .style('width', this.plotWidth_ + 'px');
 
-        this.tableDivCP_.style('min-height', this.tableDivCP_.select('.tableCP').property('clientHeight') + 'px');
 
     };
 
@@ -1911,17 +2081,17 @@
 
         if (this.is_color_variable_) {
 
-            this.legendDivCP_.select('.plotDivTableBody')
-                .style('height', this.chartHeight_ + 'px').style('width', (this.chartWidth_ - this.plotWidth_) + 'px');
+            this.legendDivCP_.select('.divTableBody')
+                .style('height', this.chartHeight_ + 'px').style('width', this.legendWidth_ + 'px');
 
             this.legendDivCP_.select('svg')
-                .attr('height', this.chartHeight_).attr('width', (this.chartWidth_ - this.plotWidth_));
+                .attr('height', this.chartHeight_).attr('width', this.legendWidth_);
 
             this.legendDivCP_.select('text.legendTitle')
                 .attr('y', this.chartHeight_ * 0.1);
 
             this.legendDivCP_.select('g.legendKeysGroup')
-                .attr("transform", "translate(" + ((this.chartWidth_ - this.plotWidth_) * 0.1) + "," + this.chartHeight_ * 0.2 + ")");
+                .attr("transform", "translate(" + (this.legendWidth_ * 0.1) + "," + this.chartHeight_ * 0.2 + ")");
 
         }
 
@@ -1970,7 +2140,6 @@
                 return scaleY(d["_yhat_"]);
             });
 
-        console.log()
         mainG.selectAll('circle.point')
             .attr('cx', function (x) {
                 return scaleX(dataObs.filter(function (d) {
@@ -2150,81 +2319,80 @@
 
     CeterisParibusPlot.prototype.resizeFonts = function () {
 
-        var getNewFontSize = function (cellsWidth, adjustment) {
+        var getAdjustmentPct = function (visWidth) {
 
-            var fontSize = 10 - adjustment;
+            var adjustment = 1;
 
-            if (cellsWidth <= 50) {
-                fontSize = 5 - adjustment;
-            } else if (cellsWidth > 50 && cellsWidth <= 150) {
-                fontSize = 10 - adjustment;
-            } else if (cellsWidth > 150 && cellsWidth <= 500) {
-                fontSize = 15 - adjustment;
-            } else if (cellsWidth > 500 && cellsWidth <= 1000) {
-                fontSize = 20 - adjustment;
+            if (visWidth > 400 && visWidth < 600) {
+                adjustment = 0.8;
+            } else if (visWidth > 200 && visWidth <= 400) {
+                adjustment = 0.6;
+            } else if (visWidth <= 200) {
+                adjustment = 0.4;
             } else {
-                fontSize = 25 - adjustment;
+                adjustment = 1;
             }
 
-            return fontSize;
+            return adjustment;
         }
 
-
-        //console.log(this.cellsWidth_)
-        // could make it for every case, but instead of giving specific number, give percent change
-
         // fonts won't be resized if user give some values for these parameters
+        if (!this.is_set_font_size_plot_title_) {
+            this.font_size_plot_title_ = Math.round(this.default_font_size_plot_title * getAdjustmentPct(this.visWidth_));
+            if (!this.init_size_calculations_) {
+                this.userDiv_.selectAll('.titleDivCP').style('font', 'bold ' + this.font_size_plot_title_ + 'px sans-serif')
+            }
+        }
+
         if (!this.is_set_font_size_titles_) {
-            var fontSize = getNewFontSize(this.cellsWidth_, 0);
-            this.font_size_titles_ = fontSize;
-            this.plotDivCP_.selectAll('.titleCell').style('font', this.font_size_titles_ + 'px sans-serif');
+            this.font_size_titles_ = Math.round(this.default_font_size_titles * getAdjustmentPct(this.visWidth_));
+            if (!this.init_size_calculations_) {
+                this.plotDivCP_.selectAll('.titleCell').style('font', this.font_size_titles_ + 'px sans-serif')
+            }
+            ;
         }
 
         if (!this.is_set_font_size_axes_) {
-            var fontSize = getNewFontSize(this.cellsWidth_, 4);
-            this.font_size_axes_ = fontSize;
-            this.plotDivCP_.selectAll('.axisY').style('font', this.font_size_axes_ + 'px sans-serif');
-            this.plotDivCP_.selectAll('.axisX').style('font', this.font_size_axes_ + 'px sans-serif');
+            this.font_size_axes_ = Math.round(this.default_font_size_axes * getAdjustmentPct(this.visWidth_));
+            // moved to calculateSizeParameter()
+            //this.plotDivCP_.selectAll('.axisY').style('font', this.font_size_axes_ + 'px sans-serif');
+            //this.plotDivCP_.selectAll('.axisX').style('font', this.font_size_axes_ + 'px sans-serif');
         }
 
         if (!this.is_set_font_size_tootlips_) {
-            var fontSize = getNewFontSize(this.cellsWidth_, 1);
-            this.font_size_tootlips_ = fontSize;
-            this.plotDivCP_.select('.tooltip').style('font', this.font_size_tootlips_ + 'px sans-serif');
+            this.font_size_tootlips_ = Math.round(this.default_font_size_tootlips * getAdjustmentPct(this.visWidth_));
+            if (!this.init_size_calculations_) {
+                this.plotDivCP_.select('.tooltip').style('font', this.font_size_tootlips_ + 'px sans-serif')
+            }
+            ;
         }
 
 
         if (this.is_color_variable_ & !this.is_set_font_size_legend_) {
-            var fontSize = getNewFontSize(this.cellsWidth_, 0);
-            this.is_set_font_size_legend_ = fontSize;
-
-            this.legendDivCP_.selectAll('text').style('font', this.is_set_font_size_legend_ + 'px sans-serif');
+            this.font_size_legend_ = Math.round(this.default_font_size_legend * getAdjustmentPct(this.visWidth_));
+            if (!this.init_size_calculations_) {
+                this.legendDivCP_.selectAll('text').style('font', this.font_size_legend_ + 'px sans-serif')
+            }
+            ;
         }
 
-        if (!this.is_set_font_size_table_) {
-            var fontSize = getNewFontSize(this.cellsWidth_, 2);
-            this.font_size_table_ = fontSize;
-            this.tableDivCP_.style('font', this.font_size_table_ + 'px sans-serif');
+        if (!this.is_set_font_size_table_ & this.add_table_) {
+            this.font_size_table_ = Math.round(this.default_font_size_table * getAdjustmentPct(this.visWidth_));
+            if (!this.init_size_calculations_) {
+                this.tableDivCP_.style('font', this.font_size_table_ + 'px sans-serif')
+            }
+            ;
         }
 
-    };
-
-
-    CeterisParibusPlot.prototype.updatePlotAfterResize_ = function () {
-
-        this.updateXYScalesAndAxes_();
-        this.updateCellsStructure_();
-        this.updatePlots_();
-        this.updateLegend_();
-        this.resizeFonts();
-        this.updateCellsStructure_();
     };
 
 
     CeterisParibusPlot.prototype.resizePlot_ = function (width, height) {
 
-        var w = this.visWidth_, //this.chartWidth_,
-            h = this.visHeight_;   //chartHeight_;
+        // zadbac o to by jak czcionki sa ustalone to nic nie robil resize
+
+        var w = 0,
+            h = 0;
 
         if ((width === null) != (height === null)) {
             console.warn("resizePlot_() should be called with no arguments or with 2 non-NULL arguments. Pretending there were no arguments passed.");
@@ -2232,35 +2400,341 @@
         }
 
         if (width) {
-            this.visWidth_ = width;
-            this.visHeight_ = height;
+            w = width;
+            h = height;
         } else {
 
-            this.visWidth_ = this.userDiv_.property('clientWidth');
-            this.visHeight_ = this.userDiv_.property('clientHeight');
+            w = this.userDiv_.property('clientWidth');
+            h = this.userDiv_.property('clientHeight');
+            /*
+             console.log('parametry client')
+             console.log('clientWidth: ' + this.userDiv_.property('clientWidth'))
+             console.log('clientHeight: ' + this.userDiv_.property('clientHeight'))
+
+             console.log('parametry ustawione')
+             console.log('visWidth_: ' + this.visWidth_ )
+             console.log('visHeight_: ' + this.visHeight_)
+             */
         }
 
-
-        this.chartWidth_ = this.visWidth_;
-
-        if (this.add_table_) {
-            this.chartHeight_ = this.visHeight_ / 2;
-        } else {
-            this.chartHeight_ = this.visHeight_;
-        }
-
-        if (Math.abs(w - this.visWidth_) <= 1 && Math.abs(h - this.visHeight_) <= 1) {
-            console.log('too little changes in size to resize the plot:' + ' in width: ' +
-                Math.abs(w - this.visWidth_) + ' in height: ' + Math.abs(h - this.visHeight_))
+        if (Math.abs(w - this.visWidth_) <= 5 && Math.abs(h - this.visHeight_) <= 5) {
+            // console.log('too little changes in size to resize the plot:' +' in width: '+
+            //     Math.abs(w - this.visWidth_) + ' in height: '+ Math.abs(h - this.visHeight_))
             return;
         } else {
 
-            this.changeSizeParameters_();
-            this.updatePlotAfterResize_();
+            this.visHeight_ = h;
+            this.visWidth_ = w;
+
+            this.resizeFonts();
+            this.calculateSizeParameters_();
+
+            this.updateXYScalesAndAxes_();
+            this.updateCellsStructure_();
+            this.updateLegend_();
+            this.updatePlots_();
 
         }
 
     };
+
+    CeterisParibusPlot.prototype.generateUniqueId_ = function () {
+
+        // Math.random should be unique because of its seeding algorithm.
+        // Convert it to base 36 (numbers + letters), and grab the first 9 characters
+        // after the decimal. - https://gist.github.com/gordonbrander/2230317
+
+        var unique_id = '_' + Math.random().toString(36).substr(2, 10);
+        /* do {
+             var unique_id = '_' + Math.random().toString(36).substr(2, 10);
+         }
+         while (!d3.select('#chartDiv')["_groups"][0][0]) //????
+
+         */
+
+        return unique_id;
+    }
+
+
+    CeterisParibusPlot.prototype.getSize_ = function (d3_selection) {
+
+        return d3_selection.node().getBoundingClientRect();
+    }
+
+    CeterisParibusPlot.prototype.calculateAxesFontandMargins_ = function () {
+
+        var maxMargin = Math.round(0.3 * d3.min([this.svgHeight_, this.cellsWidth_])); //ustalam, ze marginesy moga zajmowac max 30$ z min z wys lub szerokosci svg
+
+        var calculateMargins = function (self, font_size) {
+
+            //funkcja do wywolania po set parameters w init
+            var temporaryTextField = self.userDiv_.append('div').attr('id', 'temporary_text_div')
+                .style('opacity', 0).style("position", 'absolute')
+                .style("height", 'auto').style("width", 'auto')
+                .style('font', font_size + 'px sans-serif');
+
+            // yaxis title width
+            temporaryTextField.text(self.yaxis_title_);
+            var yAxisTitleSize = self.getSize_(temporaryTextField).height;   // height bo ja tego nie odwrocilam jeszcze
+
+            // yaxis ticks width (only one per all variables, we will analyze only min and max from this axis)
+
+            temporaryTextField.text(d3.format("d")(d3.min([d3.min(self.data_, function (d) {
+                    return d["_yhat_"];
+                }),
+                    d3.min(self.dataObs_, function (d) {
+                        return d["_y_"];
+                    })])
+            ));
+            var yAxisMin = self.getSize_(temporaryTextField).width;
+
+            temporaryTextField.text(d3.format("d")(d3.max([d3.max(self.data_, function (d) {
+                    return d["_yhat_"];
+                }),
+                    d3.max(self.dataObs_, function (d) {
+                        return d["_y_"];
+                    })])
+            ));
+            var yAxisMax = self.getSize_(temporaryTextField).width;
+
+            var yAxisSize = d3.max([yAxisMin, yAxisMax]);
+
+            // xaxis (max per each variable)
+
+            var xAxisSize = 0;
+            var tempXAxisSize = 0;
+
+            var variables = self.variables_;
+
+            for (var i = 0; i < variables.length; ++i) {
+
+                // getting only data prepared for given variable as x variable
+                var dataVar = self.data_.filter(function (d) {
+                    return (d["_vname_"] == variables[i])
+                });
+
+                // for numeric variable getting height of min value only
+                if (typeof dataVar.map(function (x) {
+                    return x[variables[i]];
+                }).filter(function (obj) {
+                    return obj;
+                })[0] == 'number') {
+
+                    temporaryTextField.text(d3.format('d')(d3.min(dataVar, function (d) {
+                        return d[variables[i]];
+                    })));
+                    tempXAxisSize = self.getSize_(temporaryTextField).height;
+                    xAxisSize = d3.max([xAxisSize, tempXAxisSize]);
+
+                }
+                // for categorical variable getting height of the longest word only (rotated)
+                else if (typeof dataVar.map(function (x) {
+                    return x[variables[i]]
+                }).filter(function (obj) {
+                    return obj;
+                })[0] == 'string') {
+
+                    var domain = d3.nest().key(function (d) {
+                        return d[variables[i]]
+                    }).entries(dataVar).map(function (x) {
+                        return x.key
+                    });
+                    var domainLength = domain.map(function (x) {
+                        return x.length
+                    });
+                    var getIndex = 0;
+                    for (var j = 0; j < domainLength.length; ++j) {
+                        if (d3.max(domainLength) === domainLength[j]) {
+                            getIndex = j;
+                        }
+                    }
+
+                    temporaryTextField.text(domain[getIndex]);
+                    temporaryTextField.style('transform', 'rotate(-20deg)')
+                    tempXAxisSize = self.getSize_(temporaryTextField).height;
+                    xAxisSize = d3.max([xAxisSize, tempXAxisSize]);
+
+                    temporaryTextField.style('transform', 'rotate(0deg)')
+                }
+
+            }
+
+            var margin = Math.ceil(d3.max([yAxisTitleSize + yAxisSize + self.default_margin_yaxis_title + self.default_tickPadding,
+                xAxisSize + self.default_tickPadding]));
+
+            temporaryTextField.remove();
+
+            return {margin: margin, yAxisTitleSize: yAxisTitleSize};
+        }
+
+        if (this.is_set_font_size_axes_) {
+
+            var results = calculateMargins(this, this.font_size_axes_);
+
+            if (results.margin <= maxMargin) {
+
+                this.default_margins.left = results.margin;
+                this.default_margins.bottom = results.margin;
+            } else {
+
+                this.default_margins.left = maxMargin;
+                this.default_margins.bottom = maxMargin;
+            }
+
+            this.yAxisTitleSize_ = results.yAxisTitleSize;
+
+        } else {
+
+            var tempFontSize = this.font_size_axes_ + 1;
+
+            do {
+                tempFontSize = tempFontSize - 1; // moze zmniejszac o 2 by szybciej to szlo
+                var results = calculateMargins(this, tempFontSize);
+                //console.log(tempFontSize)
+                //console.log(results.margin)
+                //console.log('max' + maxMargin)
+            }
+            while (results.margin > maxMargin & tempFontSize > 1) //results.margin > maxMargin)  ///TUUU uwazac
+
+            this.default_margins.left = results.margin;
+            this.default_margins.bottom = results.margin;
+            this.font_size_axes_ = tempFontSize;
+            this.yAxisTitleSize_ = results.yAxisTitleSize;
+        }
+
+    };
+
+
+    CeterisParibusPlot.prototype.calculateSizeParameters_ = function () {
+
+
+        if (this.init_size_calculations_) {
+
+            // whole visualization parameters
+            if (options.hasOwnProperty('width') && options.width !== null) {
+                this.visWidth_ = options.width;
+            } else {
+                this.visWidth_ = this.default_width;
+            }
+
+            if (options.hasOwnProperty('height') && options.height !== null) {
+                this.visHeight_ = options.height;
+            } else {
+                this.visHeight_ = this.default_height;
+            }
+
+            // title part
+            var temporaryTextField = this.userDiv_.append('div').attr('id', 'temporary_text_div')
+                .style('opacity', 0).style("position", 'absolute')
+                .style("height", 'auto').style("width", 'auto');
+
+            temporaryTextField.style('font', 'bold ' + this.font_size_plot_title_ + 'px sans-serif');
+            temporaryTextField.text(this.plot_title_);
+
+            this.titleDivHeight_ = this.getSize_(temporaryTextField).height;
+
+            // chart - part with plots and legend (= not table) visualization parameters
+            if (this.add_table_) {
+                this.chartHeight_ = (this.visHeight_ - this.titleDivHeight_) / 2;
+            } else {
+                this.chartHeight_ = (this.visHeight_ - this.titleDivHeight_);
+            }
+
+            this.resizeFonts();
+            // plot part (1/2)
+            this.plotWidth_ = this.is_color_variable_ ? this.visWidth_ * 0.8 : this.visWidth_;
+
+            // legend part
+            this.legendWidth_ = this.visWidth_ - this.plotWidth_;
+
+
+            // plot part (2/2)
+
+            this.nCells_ = this.variables_.length;
+            this.rows_ = Math.floor(Math.sqrt(this.nCells_));
+            this.cols_ = Math.floor(Math.ceil(this.nCells_ / this.rows_));
+            this.cellsHeight_ = Math.floor(this.chartHeight_ / this.rows_);
+            this.cellsWidth_ = Math.floor(this.plotWidth_ / this.cols_);
+
+
+            // checking cell title height
+            temporaryTextField.style('font', this.font_size_titles_ + 'px sans-serif')
+            temporaryTextField.text(this.variables_[1]);
+
+            this.titleCellHeight_ = this.getSize_(temporaryTextField).height;
+
+            temporaryTextField.remove();
+
+            this.svgHeight_ = this.cellsHeight_ - this.titleCellHeight_;
+
+            // calculate proper mergins
+            this.calculateAxesFontandMargins_();
+
+            this.widthAvail_ = this.cellsWidth_ - this.default_margins.left - this.default_margins.right,
+                this.heightAvail_ = this.cellsHeight_ - this.titleCellHeight_ - this.default_margins.top - this.default_margins.bottom;
+
+            this.length_rugs_ = this.size_rugs_ * d3.min([this.heightAvail_, this.widthAvail_]) * 0.1; // 0.1 - maximum length of rugs is 10% of Y/X axis height/width
+
+
+            this.init_size_calculations_ = false;
+        } else { //when resize was evoked resizePlot_() - it sets visHeight and visWidth
+
+
+            // title part
+            var temporaryTextField = this.userDiv_.append('div').attr('id', 'temporary_text_div')
+                .style('opacity', 0).style("position", 'absolute')
+                .style("height", 'auto').style("width", 'auto');
+
+            temporaryTextField.style('font', 'bold ' + this.font_size_plot_title_ + 'px sans-serif');
+            temporaryTextField.text(this.plot_title_);
+
+            this.titleDivHeight_ = this.getSize_(temporaryTextField).height;
+
+
+            if (this.add_table_) {
+                this.chartHeight_ = (this.visHeight_ - this.titleDivHeight_) / 2;
+            } else {
+                this.chartHeight_ = (this.visHeight_ - this.titleDivHeight_);
+            }
+
+
+            // plot part (1/2)
+            this.plotWidth_ = this.is_color_variable_ ? this.visWidth_ * 0.8 : this.visWidth_;
+
+            // legend part
+            this.legendWidth_ = this.visWidth_ - this.plotWidth_;
+
+
+            // plot part (2/2)
+            this.cellsHeight_ = Math.floor(this.chartHeight_ / this.rows_);
+            this.cellsWidth_ = Math.floor(this.plotWidth_ / this.cols_);
+
+            // checking cell title height
+            temporaryTextField.style('font', this.font_size_titles_ + 'px sans-serif')
+            temporaryTextField.text(this.variables_[1]);
+
+            this.titleCellHeight_ = this.getSize_(temporaryTextField).height;
+
+            temporaryTextField.remove();
+
+            this.svgHeight_ = this.cellsHeight_ - this.titleCellHeight_;
+
+            // calculate proper mergins
+            this.calculateAxesFontandMargins_();
+            this.plotDivCP_.selectAll('.axisY').style('font', this.font_size_axes_ + 'px sans-serif');
+            this.plotDivCP_.selectAll('.axisX').style('font', this.font_size_axes_ + 'px sans-serif');
+
+
+            this.widthAvail_ = this.cellsWidth_ - this.default_margins.left - this.default_margins.right,
+                this.heightAvail_ = this.cellsHeight_ - this.titleCellHeight_ - this.default_margins.top - this.default_margins.bottom;
+
+            this.length_rugs_ = this.size_rugs_ * d3.min([this.heightAvail_, this.widthAvail_]) * 0.1; // 0.1 - maximum length of rugs is 10% of Y/X axis height/width
+
+        }
+
+
+    };
+
 
     // only main function will be exported
     exports.createPlot = createPlot;
