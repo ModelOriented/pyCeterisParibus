@@ -1,4 +1,5 @@
 import unittest
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -98,15 +99,15 @@ class TestSelect(unittest.TestCase):
 class TestGower(unittest.TestCase):
 
     def setUp(self):
-        self.X = pd.DataFrame(
-            {
-                'age': [21, 21, 19, 30, 21, 21, 19, 30],
-                'gender': ['M', 'M', 'N', 'M', 'F', 'F', 'F', 'F'],
-                'civil_status': ['MARRIED', 'SINGLE', 'SINGLE', 'SINGLE', 'MARRIED', 'SINGLE', 'WIDOW', 'DIVORCED'],
-                'salary': [3000.0, 1200.0, 32000.0, 1800.0, 2900.0, 1100.0, 10000.0, 1500.0],
-                'children': [True, False, True, True, True, False, False, True],
-                'available_credit': [2200, 100, 22000, 1100, 2000, 100, 6000, 2200]
-            })
+        X_items = [
+            ('age', [21, 21, 19, 30, 21, 21, 19, 30]),
+            ('gender', ['M', 'M', 'N', 'M', 'F', 'F', 'F', 'F']),
+            ('civil_status', ['MARRIED', 'SINGLE', 'SINGLE', 'SINGLE', 'MARRIED', 'SINGLE', 'WIDOW', 'DIVORCED']),
+            ('salary', [3000.0, 1200.0, 32000.0, 1800.0, 2900.0, 1100.0, 10000.0, 1500.0]),
+            ('children', [True, False, True, True, True, False, False, True]),
+            ('available_credit', [2200, 100, 22000, 1100, 2000, 100, 6000, 2200])
+        ]
+        self.X = pd.DataFrame.from_dict(OrderedDict(X_items))
         self.arr = _normalize_mixed_data_columns(self.X)
         self.observation = [22, 'F', 'DIVORCED', 2000, False, 1000]
         self.observation = _normalize_mixed_data_columns(self.observation)
@@ -145,7 +146,7 @@ class TestGower(unittest.TestCase):
 
     def test_gower_distances_4(self):
         # test accepting data in a dictionary format
-        dict_data = self.X.to_dict()
+        dict_data = self.X.to_dict(orient='list', into=OrderedDict)
         distances1 = gower_distances(self.X, self.X.iloc[1])
         distances2 = gower_distances(dict_data, self.X.iloc[1])
         np.testing.assert_array_almost_equal(distances1, distances2)
