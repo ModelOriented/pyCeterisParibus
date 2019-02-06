@@ -62,6 +62,30 @@ plot(cp_2, color="bmi")
 ```
 ![Model interactions](misc/color_by_default.png)
 
+### Multiclass models
+Prepare model and wrap it into explainers
+```
+rf_model, iris_x, iris_y, iris_var_names = random_forest_classifier()
+
+explainer_rf1 = explain(rf_model, iris_var_names, iris_x, iris_y,
+                       predict_function= lambda X: rf_model.predict_proba(X)[::, 0], label=iris.target_names[0])
+explainer_rf2 = explain(rf_model, iris_var_names, iris_x, iris_y,
+                       predict_function= lambda X: rf_model.predict_proba(X)[::, 1], label=iris.target_names[1])
+explainer_rf3 = explain(rf_model, iris_var_names, iris_x, iris_y,
+                       predict_function= lambda X: rf_model.predict_proba(X)[::, 2], label=iris.target_names[2])
+```
+
+Calculate profiles and plot
+```
+cp_rf1 = individual_variable_profile(explainer_rf1, iris_x[0], iris_y[0])
+cp_rf2 = individual_variable_profile(explainer_rf2, iris_x[0], iris_y[0])
+cp_rf3 = individual_variable_profile(explainer_rf3, iris_x[0], iris_y[0])
+
+plot(cp_rf1, cp_rf2, cp_rf3, selected_variables=['petal length (cm)', 'petal width (cm)', 'sepal length (cm)'])
+```
+![Multiclass models](misc/multiclass_models.png)
+
+
 ## Setup
 Works on Python 3.5+
 
