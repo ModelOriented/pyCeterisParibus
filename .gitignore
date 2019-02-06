@@ -2,7 +2,6 @@
 __pycache__/
 .coverage
 *.pyc
-/.ipynb_checkpoints/
 
 ceteris_paribus/plots/obs*.js
 ceteris_paribus/plots/params*.js
@@ -10,3 +9,5 @@ ceteris_paribus/plots/profile*.js
 ceteris_paribus/plots/plots*.html
 
 /docs/_build/
+
+**/.ipynb_checkpoints
