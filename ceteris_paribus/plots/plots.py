@@ -27,15 +27,29 @@ def _calculate_plot_variables(cp_profile, selected_variables):
         return list(selected_variables)
 
 
-def plot(cp_profile, *args, color=None,
+def _params_update(params, **kwargs):
+    for key, val in kwargs.items():
+        if val:
+            params[key] = val
+    return params
+
+
+def plot(cp_profile, *args,
          show_profiles=True, show_observations=True, show_residuals=False, show_rugs=False,
-         aggregate_profiles=None, selected_variables=None, **kwargs):
+         aggregate_profiles=None, selected_variables=None,
+         color=None, size=None, alpha=None,
+         color_pdps=None, size_pdps=None, alpha_pdps=None,
+         size_points=None, alpha_points=None, color_points=None,
+         size_residuals=None, alpha_residuals=None, color_residuals=None,
+         height=500, width=600,
+         plot_title='', y_label=None,
+         print_observations=True,
+         **kwargs):
     """
     Plot ceteris paribus profile
 
     :param cp_profile: ceteris paribus profile
     :param args: next (optional) ceteris paribus profiles to be plotted along
-    :param color: #TODO
     :param show_profiles: whether to show profiles
     :param show_observations: whether to show individual observations
     :param show_residuals: whether to plot residuals
@@ -53,6 +67,16 @@ def plot(cp_profile, *args, color=None,
     params['show_observations'] = show_observations
     params['show_rugs'] = show_rugs
     params['show_residuals'] = show_residuals and (cp_profile.new_observation_true is not None)
+    params['add_table'] = print_observations
+    params['height'] = height
+    params['width'] = width
+    params['plot_title'] = plot_title
+    params = _params_update(params, size=size, alpha=alpha,
+                            color_pdps=color_pdps, size_pdps=size_pdps, alpha_pdps=alpha_pdps,
+                            size_points=size_points, alpha_points=alpha_points, color_points=color_points,
+                            size_residuals=size_residuals, alpha_residuals=alpha_residuals,
+                            color_residuals=color_residuals,
+                            y_label=y_label)
 
     if aggregate_profiles in {'mean', 'median', None}:
         params['aggregate_profiles'] = aggregate_profiles
