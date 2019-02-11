@@ -34,7 +34,22 @@ def _params_update(params, **kwargs):
     return params
 
 
-def plot(cp_profile, *args,
+def _detect_plot_destination(destination):
+    """
+    Detect plot destination (browser or embedded inside a notebook) based on the user choice
+    """
+    if destination is None or destination == "notebook":
+        try:
+            from IPython.display import IFrame
+            return "notebook"
+        except ImportError:
+            if destination == "notebook":
+                logging.warning("Notebook environment not detected. Plots will be placed in a new tab")
+    # when browser is explicitly chosen or as a default
+    return "browser"
+
+
+def plot(cp_profile, *args, destination=None,
          show_profiles=True, show_observations=True, show_residuals=False, show_rugs=False,
          aggregate_profiles=None, selected_variables=None,
          color=None, size=2, alpha=0.4,
@@ -50,6 +65,7 @@ def plot(cp_profile, *args,
 
     :param cp_profile: ceteris paribus profile
     :param args: next (optional) ceteris paribus profiles to be plotted along
+    :param destination: available *browser* - open plot in a new tab, *notebook* - embed a plot in jupyter notebook, None - autodetect the best option
     :param show_profiles: whether to show profiles
     :param show_observations: whether to show individual observations
     :param show_residuals: whether to plot residuals
@@ -119,5 +135,12 @@ def plot(cp_profile, *args,
     with open(os.path.join(PLOTS_DIR, "plots{}.html").format(plot_id), 'w') as f:
         f.write(data)
 
-    # open plot in a browser
-    webbrowser.open("file://{}".format(os.path.join(PLOTS_DIR, "plots{}.html".format(plot_id))))
+    plot_path = os.path.join(PLOTS_DIR, "plots{}.html".format(plot_id))
+
+    destination = _detect_plot_destination(destination)
+    if destination == "notebook":
+        from IPython.display import IFrame, display
+        display(IFrame(os.path.relpath(plot_path), width=int(width * 1.1), height=int(height * 1.1)))
+    else:
+        # open plot in a browser
+        webbrowser.open("file://{}".format(plot_path))
