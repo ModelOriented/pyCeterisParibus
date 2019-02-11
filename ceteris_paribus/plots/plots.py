@@ -37,12 +37,12 @@ def _params_update(params, **kwargs):
 def plot(cp_profile, *args,
          show_profiles=True, show_observations=True, show_residuals=False, show_rugs=False,
          aggregate_profiles=None, selected_variables=None,
-         color=None, size=None, alpha=None,
+         color=None, size=2, alpha=0.4,
          color_pdps=None, size_pdps=None, alpha_pdps=None,
-         size_points=None, alpha_points=None, color_points=None,
-         size_residuals=None, alpha_residuals=None, color_residuals=None,
+         color_points=None, size_points=None, alpha_points=None,
+         color_residuals=None, size_residuals=None, alpha_residuals=None,
          height=500, width=600,
-         plot_title='', y_label=None,
+         plot_title='', y_label='y',
          print_observations=True,
          **kwargs):
     """
@@ -56,6 +56,23 @@ def plot(cp_profile, *args,
     :param show_rugs: whether to plot rugs
     :param aggregate_profiles: if specified additional aggregated profile will be plotted, available values: `mean`, `median`
     :param selected_variables: variables selected for the plots
+    :param color: color for profiles - either a color or a variable that should be used for coloring
+    :param size: size of lines to be plotted
+    :param alpha: opacity of lines (between 0 and 1)
+    :param color_pdps: color of pdps - aggregated profiles
+    :param size_pdps: size of pdps - aggregated profiles
+    :param alpha_pdps: opacity of pdps - aggregated profiles
+    :param color_points: color points to be plotted
+    :param size_points: size of points to be plotted
+    :param alpha_points: opacity of points
+    :param color_residuals: color of plotted residuals
+    :param size_residuals: size of plotted residuals
+    :param alpha_residuals: opacity of plotted residuals
+    :param height: height of the window containing plots
+    :param width: width of the window containing plots
+    :param plot_title: Title of the plot displayed above
+    :param y_label: Label for the y axis
+    :param print_observations: whether to print the table with observations values
     :param kwargs: other options passed to the plot
     """
 
@@ -71,7 +88,9 @@ def plot(cp_profile, *args,
     params['height'] = height
     params['width'] = width
     params['plot_title'] = plot_title
-    params = _params_update(params, size=size, alpha=alpha,
+    params['size_ices'] = size
+    params['alpha_ices'] = alpha
+    params = _params_update(params,
                             color_pdps=color_pdps, size_pdps=size_pdps, alpha_pdps=alpha_pdps,
                             size_points=size_points, alpha_points=alpha_points, color_points=color_points,
                             size_residuals=size_residuals, alpha_residuals=alpha_residuals,
