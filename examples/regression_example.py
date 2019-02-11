@@ -41,7 +41,8 @@ if __name__ == "__main__":
 
     neighbours = select_neighbours(X_train, X_train[0], variable_names=variable_names,
                                    selected_variables=variable_names, n=15)
-    cp3 = individual_variable_profile(explainer_rf, neighbours, variables=['LSTAT', 'RM'])
+    cp3 = individual_variable_profile(explainer_rf, neighbours, variables=['LSTAT', 'RM'],
+                                      variable_splits={'LSTAT': [10, 20, 30], 'RM': [4, 5, 6, 7]})
     plot(cp3)
     # plot(cp3, aggregate_profiles=np.mean)
     #cp3.dump_json("c.json")

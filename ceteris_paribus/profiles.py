@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from collections import OrderedDict
 
@@ -8,7 +9,8 @@ import pandas as pd
 from ceteris_paribus.plots import PLOTS_DIR
 
 
-def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101):
+def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101,
+                                variable_splits=None):
     """
     Calculate ceteris paribus profile
 
@@ -17,10 +19,11 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
     :param y: y true labels for `new_observation`. If specified then will be added to ceteris paribus plots
     :param variables: collection of variables selected for calculating profiles
     :param grid_points: number of points for profile
+    :param variable_splits: dictionary of splits for variables, in most cases created with `_calculate_variable_splits()`. If None then it will be calculated based on validation data avaliable in the `explainer`.
     :return: instance of CeterisParibus class
     """
     variables = _get_variables(variables, explainer)
-    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points)
+    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
     return cp_profiles
 
 
@@ -40,10 +43,20 @@ def _get_variables(variables, explainer):
     return variables
 
 
+def _valid_variable_splits(variable_splits, variables):
+    """
+    Validate variable splits
+    """
+    if set(variable_splits.keys()) == set(variables):
+        return True
+    else:
+        logging.warning("Variable splits are incorrect - wrong set of variables supplied. Parameter is ignored")
+        return False
+
+
 class CeterisParibus:
 
-    def __init__(self, explainer, new_observation, y, selected_variables, grid_points):
-        # TODO specify variable splits manually
+    def __init__(self, explainer, new_observation, y, selected_variables, grid_points, variable_splits):
         self._data = explainer.data
         self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
@@ -53,17 +66,21 @@ class CeterisParibus:
         self._new_observation = np.array(new_observation)
         if self._new_observation.ndim == 1:
             self._new_observation = np.array([self._new_observation])
-        self.profile = self._calculate_profile()
+        variable_splits = self._get_variable_splits(variable_splits)
+        self.profile = self._calculate_profile(variable_splits)
         variables_mask = [self._all_variable_names.index(var) for var in self.selected_variables]
         self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
         self.new_observation_predictions = self._predict_function(self._new_observation)
         self.new_observation_true = [y] if np.isscalar(y) else y
 
-    def _calculate_profile(self):
-        variables_dict = dict(zip(self._all_variable_names, self._data.T))
-        chosen_variables_dict = dict((var, variables_dict[var]) for var in self.selected_variables)
+    def _get_variable_splits(self, variable_splits):
+        if variable_splits is None or not _valid_variable_splits(variable_splits, self.selected_variables):
+            variables_dict = dict(zip(self._all_variable_names, self._data.T))
+            chosen_variables_dict = dict((var, variables_dict[var]) for var in self.selected_variables)
+            variable_splits = self._calculate_variable_splits(chosen_variables_dict)
+        return variable_splits
 
-        variable_splits = self._calculate_variable_splits(chosen_variables_dict)
+    def _calculate_profile(self, variable_splits):
         profiles_list = [self._single_variable_df(var_name, var_split)
                          for var_name, var_split in variable_splits.items()]
         profile = pd.concat(profiles_list, ignore_index=True)
