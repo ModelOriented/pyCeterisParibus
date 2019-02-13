@@ -132,7 +132,7 @@ plot(cp_2, color="bmi")
 ```
 ![Model interactions](misc/color_by_default.png)
 
-### Multiclass models (classification problem
+### Multiclass models (classification problem)
 Prepare dataset and model
 ```
 iris = load_iris()
