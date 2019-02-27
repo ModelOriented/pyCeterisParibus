@@ -23,6 +23,17 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
     :return: instance of CeterisParibus class
     """
     variables = _get_variables(variables, explainer)
+    if not isinstance(new_observation, pd.core.frame.DataFrame):
+        new_observation = np.array(new_observation)
+        if new_observation.ndim == 1:
+            # make 1D array 2D
+            new_observation = new_observation.reshape((1, -1))
+        new_observation = pd.DataFrame(new_observation, columns=explainer.var_names)
+    if isinstance(y, pd.core.frame.DataFrame):
+        y = y.iloc[0]
+    else:
+        y = pd.Series(y)
+
     cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
     return cp_profiles
 
@@ -57,25 +68,32 @@ def _valid_variable_splits(variable_splits, variables):
 class CeterisParibus:
 
     def __init__(self, explainer, new_observation, y, selected_variables, grid_points, variable_splits):
+        """
+        Creates Ceteris Paribus object
+
+        :param explainer: explainer wrapping the model
+        :param new_observation: DataFrame with observations for which the profiles will be calculated
+        :param y: pandas Series with labels for the observations
+        :param selected_variables: variables for which the profiles are calculated
+        :param grid_points: number of points in a single variable split if calculated automatically
+        :param variable_splits: mapping of variables into points the profile will be calculated, if None then calculate with the function `_calculate_variable_splits`
+        """
         self._data = explainer.data
         self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
         self._label = explainer.label
-        self._all_variable_names = list(explainer.var_names)
+        self._all_variable_names = explainer.var_names
+        self._new_observation = new_observation
         self.selected_variables = list(selected_variables)
-        self._new_observation = np.array(new_observation)
-        if self._new_observation.ndim == 1:
-            self._new_observation = np.array([self._new_observation])
         variable_splits = self._get_variable_splits(variable_splits)
         self.profile = self._calculate_profile(variable_splits)
-        variables_mask = [self._all_variable_names.index(var) for var in self.selected_variables]
-        self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
+        self.new_observation_values = self._new_observation[self.selected_variables]
         self.new_observation_predictions = self._predict_function(self._new_observation)
-        self.new_observation_true = [y] if np.isscalar(y) else y
+        self.new_observation_true = y
 
     def _get_variable_splits(self, variable_splits):
         if variable_splits is None or not _valid_variable_splits(variable_splits, self.selected_variables):
-            variables_dict = dict(zip(self._all_variable_names, self._data.T))
+            variables_dict = self._data.to_dict(orient='series')
             chosen_variables_dict = dict((var, variables_dict[var]) for var in self.selected_variables)
             variable_splits = self._calculate_variable_splits(chosen_variables_dict)
         return variable_splits
@@ -90,13 +108,14 @@ class CeterisParibus:
         """
         Calculate the split for a single variable
 
-        :param X_var: variable data
+        :param X_var: variable data - pandas Series
         :return: selected subset of values for the variable
         """
-        if np.issubdtype(X_var.dtype, np.integer):
+        if np.issubdtype(X_var.dtype, np.floating):
+            quantiles = np.linspace(0, 1, self._grid_points)
+            return np.quantile(X_var, quantiles)
+        else:
             return np.unique(X_var)
-        quantiles = np.linspace(0, 1, self._grid_points)
-        return np.quantile(X_var, quantiles)
 
     def _calculate_variable_splits(self, chosen_variables_dict):
         """
@@ -119,7 +138,7 @@ class CeterisParibus:
         :return: DataFrame with profiles for a given variable
         """
         return pd.concat([self._single_observation_df(observation, var_name, var_split, profile_id)
-                          for profile_id, observation in enumerate(self._new_observation)], ignore_index=True)
+                          for profile_id, observation in self._new_observation.iterrows()], ignore_index=True)
 
     def _single_observation_df(self, observation, var_name, var_split, profile_id):
         """
@@ -137,7 +156,7 @@ class CeterisParibus:
         X_dict = OrderedDict(zip(self._all_variable_names, X.T))
         df = pd.DataFrame.from_dict(X_dict)
         df[var_name] = var_split
-        df['_yhat_'] = self._predict_function(df.values)
+        df['_yhat_'] = self._predict_function(df)
         df['_vname_'] = np.repeat(var_name, grid_points)
         df['_label_'] = self._label
         df['_ids_'] = profile_id
@@ -190,7 +209,7 @@ class CeterisParibus:
         for profile in profiles:
             for i, yhat in enumerate(profile.new_observation_predictions):
                 for var_name in profile.selected_variables:
-                    d = dict(zip(profile._all_variable_names, profile._new_observation[i]))
+                    d = dict(zip(profile._all_variable_names, profile._new_observation.iloc[i]))
                     d['_vname_'] = var_name
                     d['_yhat_'] = yhat
                     d['_label_'] = profile._label
