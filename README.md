@@ -164,3 +164,7 @@ cp_rf3 = individual_variable_profile(explainer_rf3, iris_x[0], iris_y[0])
 plot(cp_rf1, cp_rf2, cp_rf3, selected_variables=['petal length (cm)', 'petal width (cm)', 'sepal length (cm)'])
 ```
 ![Multiclass models](misc/multiclass_models.png)
+
+
+### Acknowledgments
+Work on this package was financially supported by the ‘NCN Opus grant 2016/21/B/ST6/0217’.
