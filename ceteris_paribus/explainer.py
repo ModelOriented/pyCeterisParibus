@@ -51,11 +51,13 @@ def explain(model, variable_names=None, data=None, y=None, predict_function=None
                 raise ValueError("Incorrect number of variables given.")
 
             data = pd.DataFrame(data, columns=variable_names)
+
     if y is not None:
         if isinstance(y, pd.core.frame.DataFrame):
-            y = y.iloc[0]
+            y = pd.Series(y[0])
         else:
             y = pd.Series(y)
 
     explainer = Explainer(model, list(variable_names), data, y, predict_function, label)
     return explainer
+

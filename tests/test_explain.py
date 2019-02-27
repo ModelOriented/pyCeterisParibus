@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+import numpy as np
 import pandas as pd
 from sklearn import datasets, ensemble
 
@@ -21,15 +22,15 @@ class TestExplain(unittest.TestCase):
         # Train the model using the training set
         cls.rf_model.fit(cls.X, cls.y)
 
-        cls.labels = list(boston['feature_names'])
+        cls.var_names = list(boston['feature_names'])
 
-        # model, data, labels, variable_names
+        cls.df = pd.DataFrame.from_dict({'a': [1, 2], 'b': [3, 6]})
 
     def test_explainer_1(self):
         model = MagicMock()
         delattr(model, 'predict')
         with self.assertRaises(ValueError) as c:
-            explain(model, self.labels)
+            explain(model, self.var_names)
 
     def test_explainer_2(self):
         model = MagicMock(predict=id)
@@ -56,3 +57,56 @@ class TestExplain(unittest.TestCase):
         # raises warning
         explainer = explain(model, [])
         self.assertEqual(explainer.label, "unlabeled_model")
+
+    def test_explainer_7(self):
+        # no labels given
+        with self.assertRaises(ValueError) as c:
+            explainer = explain(self.rf_model)
+
+    def test_explainer_8(self):
+        # labels imputed from the dataframe
+        explainer = explain(self.rf_model, data=self.df)
+        self.assertEqual(explainer.var_names, ['a', 'b'])
+
+    def test_explainer_9(self):
+        explainer = explain(self.rf_model, variable_names=["a", "b", "c"], y=[1, 2, 3])
+        np.testing.assert_array_equal(explainer.y, pd.Series([1, 2, 3]))
+
+    def test_explainer_10(self):
+        explainer = explain(self.rf_model, variable_names=["a", "b"], y=np.array([1, 4]))
+        np.testing.assert_array_equal(explainer.y, pd.Series([1, 4]))
+
+    def test_explainer_11(self):
+        explainer = explain(self.rf_model, variable_names=["a", "b"], y=pd.DataFrame(np.array([1, 4])))
+        np.testing.assert_array_equal(explainer.y, pd.Series([1, 4]))
+
+    def test_explainer_12(self):
+        # data from dataframe
+        explainer = explain(self.rf_model, data=self.df)
+        np.testing.assert_array_equal(explainer.data, self.df)
+
+    def test_explainer_13(self):
+        # data from numpy array
+        explainer = explain(self.rf_model, variable_names=["a", "b"], data=self.df.values)
+        np.testing.assert_array_equal(explainer.data, self.df)
+
+    def test_explainer_14(self):
+        # data for one observation - 1D array
+        explainer = explain(self.rf_model, variable_names=["a", "b"], data=np.array(["cc", "dd"]))
+        np.testing.assert_array_equal(explainer.data, pd.DataFrame.from_dict({"a": ["cc"], "b": ["dd"]}))
+
+    def test_explainer_15(self):
+        # wrong number of variables
+        with self.assertRaises(ValueError):
+            explainer = explain(self.rf_model, variable_names=["a", "b", "c"], data=self.df.values)
+
+    def test_explainer_16(self):
+        # predict function for array
+        explainer = explain(self.rf_model, variable_names=self.var_names, data=self.X[:10], y=self.y[:10])
+        self.assertEqual(len(explainer.predict_fun(pd.DataFrame(self.X[:10]))), 10)
+
+    def test_explainer_17(self):
+        # predict function for dataframe
+        boston_df = pd.DataFrame(self.X[:10])
+        explainer = explain(self.rf_model, data=boston_df)
+        self.assertEqual(len(explainer.predict_fun(boston_df)), 10)

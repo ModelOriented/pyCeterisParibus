@@ -30,7 +30,7 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
             new_observation = new_observation.reshape((1, -1))
         new_observation = pd.DataFrame(new_observation, columns=explainer.var_names)
     if isinstance(y, pd.core.frame.DataFrame):
-        y = y.iloc[0]
+        y = pd.Series(y[0])
     else:
         y = pd.Series(y)
 
