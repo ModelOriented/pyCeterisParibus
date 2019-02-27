@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+import pandas as pd
 from sklearn import datasets, ensemble
 
 from ceteris_paribus.explainer import explain
@@ -32,7 +33,7 @@ class TestExplain(unittest.TestCase):
 
     def test_explainer_2(self):
         model = MagicMock(predict=id)
-        explainer = explain(model, [])
+        explainer = explain(model, data=pd.DataFrame())
         self.assertEqual(explainer.predict_fun, id)
 
     def test_explainer_3(self):

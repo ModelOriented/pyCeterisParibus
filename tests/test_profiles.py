@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 import numpy as np
+import pandas as pd
 
 from ceteris_paribus.profiles import _get_variables, CeterisParibus
 
@@ -75,7 +76,7 @@ class TestProfiles(unittest.TestCase):
     def test_single_observation_df(self):
         self.cp._label = "xyz"
         self.cp._all_variable_names = ["a", "b", "c"]
-        self.cp._predict_function = lambda arr: np.array([sum(row) for row in arr])
+        self.cp._predict_function = lambda df: df.sum(axis=1)
         splits = np.array([1, 3, 15])
         observation_df = self.cp._single_observation_df(np.array([1, 2, 10]), "a", splits, profile_id=42)
         self.assertEqual(set(observation_df.columns), {"a", "b", "c", "_yhat_", "_vname_", "_label_", "_ids_"})
@@ -86,9 +87,9 @@ class TestProfiles(unittest.TestCase):
     def test_single_variable_df(self):
         self.cp._label = "xyz"
         self.cp._all_variable_names = ["a", "b", "c"]
-        self.cp._predict_function = lambda arr: np.array([sum(row) for row in arr])
+        self.cp._predict_function = lambda df: df.sum(axis=1)
         splits = np.array([1, 3, 15])
-        self.cp._new_observation = np.array([[1, 2, 10]])
+        self.cp._new_observation = pd.DataFrame(np.array([[1, 2, 10]]))
         variable_df = self.cp._single_variable_df("a", splits)
         self.assertEqual(set(variable_df.columns), {"a", "b", "c", "_yhat_", "_vname_", "_label_", "_ids_"})
         np.testing.assert_array_equal(variable_df["_yhat_"], [13, 15, 27])
