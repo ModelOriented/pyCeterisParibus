@@ -38,18 +38,24 @@ def _detect_plot_destination(destination):
     """
     Detect plot destination (browser or embedded inside a notebook) based on the user choice
     """
-    if destination is None or destination == "notebook":
+    if destination == "notebook":
         try:
             from IPython.display import IFrame
             return "notebook"
         except ImportError:
-            if destination == "notebook":
-                logging.warning("Notebook environment not detected. Plots will be placed in a new tab")
+            logging.warning("Notebook environment not detected. Plots will be placed in a new tab")
     # when browser is explicitly chosen or as a default
     return "browser"
 
 
-def plot(cp_profile, *args, destination=None,
+def plot_notebook(cp_profile, *args, **kwargs):
+    """
+    Wrapper for the ``plot`` function with option to embed in the notebook
+    """
+    plot(cp_profile, *args, destination="notebook", **kwargs)
+
+
+def plot(cp_profile, *args, destination="browser",
          show_profiles=True, show_observations=True, show_residuals=False, show_rugs=False,
          aggregate_profiles=None, selected_variables=None,
          color=None, size=2, alpha=0.4,
@@ -65,7 +71,7 @@ def plot(cp_profile, *args, destination=None,
 
     :param cp_profile: ceteris paribus profile
     :param args: next (optional) ceteris paribus profiles to be plotted along
-    :param destination: available *browser* - open plot in a new tab, *notebook* - embed a plot in jupyter notebook, None - autodetect the best option
+    :param destination: available *browser* - open plot in a new tab, *notebook* - embed a plot in jupyter notebook if possible
     :param show_profiles: whether to show profiles
     :param show_observations: whether to show individual observations
     :param show_residuals: whether to plot residuals
