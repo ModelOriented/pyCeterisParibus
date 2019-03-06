@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 
-from ceteris_paribus.profiles import _get_variables, CeterisParibus
+from ceteris_paribus.profiles import _get_variables, CeterisParibus, _valid_variable_splits
 from ceteris_paribus.utils import dump_profiles, dump_observations
 
 
@@ -98,6 +98,34 @@ class TestProfiles(unittest.TestCase):
         label = "xyzabc"
         self.cp.set_label(label)
         self.assertEqual(self.cp._label, label)
+
+    def test_valid_variable_splits_1(self):
+        var_splits = {"a": [1, 2], "b": [4]}
+        self.assertTrue(_valid_variable_splits(var_splits, ["a", "b"]))
+        # expect warning here
+        self.assertFalse(_valid_variable_splits(var_splits, ["c", "a", "b"]))
+
+    def test_get_variable_splits_1(self):
+        self.cp.selected_variables = ["a", "c"]
+        var_splits = {"a": [1, 2], "c": [3]}
+        self.assertEqual(var_splits, self.cp._get_variable_splits(var_splits))
+
+    def test_get_variable_splits_2(self):
+        self.cp.selected_variables = ["b", "c"]
+        self.cp._data = pd.DataFrame.from_dict({
+            "a": [1, 2, 4, 2],
+            "b": ["a", "x", "a", "c"],
+            "c": [1.21, 1.45, 1.72, 1.9132]
+        })
+        self.cp._grid_points = 4
+        var_splits = self.cp._get_variable_splits(None)
+        self.assertEqual(len(var_splits["b"]), 3)
+        self.assertEqual(len(var_splits["c"]), 4)
+
+    def test_calculate_profile(self):
+        self.cp._single_variable_df = lambda var_name, var_split: pd.DataFrame({"c": [5], "d": [7]})
+        var_splits = {"a": [2, 5, 2], "b": [3, 6]}
+        self.assertEqual(self.cp._calculate_profile(var_splits).shape, (2, 2))
 
 
 class TestProfilesUtils(unittest.TestCase):

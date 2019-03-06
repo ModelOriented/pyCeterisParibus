@@ -88,6 +88,9 @@ class CeterisParibus:
         self.new_observation_true = y
 
     def _get_variable_splits(self, variable_splits):
+        """
+        Helper function for calculating variable splits
+        """
         if variable_splits is None or not _valid_variable_splits(variable_splits, self.selected_variables):
             variables_dict = self._data.to_dict(orient='series')
             chosen_variables_dict = dict((var, variables_dict[var]) for var in self.selected_variables)
@@ -95,6 +98,9 @@ class CeterisParibus:
         return variable_splits
 
     def _calculate_profile(self, variable_splits):
+        """
+        Calculate DataFrame profile
+        """
         profiles_list = [self._single_variable_df(var_name, var_split)
                          for var_name, var_split in variable_splits.items()]
         profile = pd.concat(profiles_list, ignore_index=True)
@@ -108,6 +114,7 @@ class CeterisParibus:
         :return: selected subset of values for the variable
         """
         if np.issubdtype(X_var.dtype, np.floating):
+            # grid points might be larger than the number of unique values
             quantiles = np.linspace(0, 1, self._grid_points)
             return np.quantile(X_var, quantiles)
         else:
