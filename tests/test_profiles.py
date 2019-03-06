@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from ceteris_paribus.profiles import _get_variables, CeterisParibus
+from ceteris_paribus.utils import dump_profiles, dump_observations
 
 
 class TestProfiles(unittest.TestCase):
@@ -32,10 +33,6 @@ class TestProfiles(unittest.TestCase):
         variables = ["c", "a", "b"]
         explainer = MagicMock(var_names=variables)
         self.assertEqual(_get_variables(None, explainer), variables)
-
-    def test_individual_variable_profile(self):
-        # TODO fill it
-        pass
 
     def test_calculate_single_split(self):
         X_var = np.array([1, 2, 1, 2, 1])
@@ -75,7 +72,7 @@ class TestProfiles(unittest.TestCase):
 
     def test_single_observation_df(self):
         self.cp._label = "xyz"
-        self.cp._all_variable_names = ["a", "b", "c"]
+        self.cp.all_variable_names = ["a", "b", "c"]
         self.cp._predict_function = lambda df: df.sum(axis=1)
         splits = np.array([1, 3, 15])
         observation_df = self.cp._single_observation_df(np.array([1, 2, 10]), "a", splits, profile_id=42)
@@ -86,13 +83,106 @@ class TestProfiles(unittest.TestCase):
 
     def test_single_variable_df(self):
         self.cp._label = "xyz"
-        self.cp._all_variable_names = ["a", "b", "c"]
+        self.cp.all_variable_names = ["a", "b", "c"]
         self.cp._predict_function = lambda df: df.sum(axis=1)
         splits = np.array([1, 3, 15])
-        self.cp._new_observation = pd.DataFrame(np.array([[1, 2, 10]]))
+        self.cp.new_observation = pd.DataFrame(np.array([[1, 2, 10]]))
         variable_df = self.cp._single_variable_df("a", splits)
         self.assertEqual(set(variable_df.columns), {"a", "b", "c", "_yhat_", "_vname_", "_label_", "_ids_"})
         np.testing.assert_array_equal(variable_df["_yhat_"], [13, 15, 27])
         np.testing.assert_array_equal(variable_df["a"], splits)
         np.testing.assert_array_equal(variable_df["b"], [2] * 3)
         np.testing.assert_array_equal(variable_df["_ids_"], [0] * 3)
+
+    def test_set_label(self):
+        label = "xyzabc"
+        self.cp.set_label(label)
+        self.assertEqual(self.cp._label, label)
+
+
+class TestProfilesUtils(unittest.TestCase):
+
+    def setUp(self):
+        self.cp1 = object.__new__(CeterisParibus)
+
+    def test_dump_profiles_1(self):
+        self.cp1.profile = pd.DataFrame()
+        # one empty profile
+        observations = dump_profiles([self.cp1])
+        self.assertEqual(observations, [])
+
+    def test_dump_profiles_2(self):
+        records = [{
+            "age": 19.0,
+            "_vname_": "children",
+            "_yhat_": 19531.877043934743,
+            "_label_": "GradientBoostingRegressor",
+            "children": 4.0,
+            "_ids_": 0,
+            "bmi": 27.9
+        },
+            {
+                "age": 19.0,
+                "_vname_": "children",
+                "_yhat_": 19531.877043934743,
+                "_label_": "GradientBoostingRegressor",
+                "children": 4.0,
+                "_ids_": 0,
+                "bmi": 27.9
+            }]
+
+        self.cp1.profile = pd.DataFrame.from_records(records)
+        self.assertEqual(records, dump_profiles([self.cp1]))
+
+    def test_dump_profiles_3(self):
+        records = [{
+            "age": 19.0,
+            "_vname_": "children",
+            "_yhat_": 19531.877043934743,
+            "_label_": "GradientBoostingRegressor",
+            "children": 4.0,
+            "_ids_": 0,
+            "bmi": 27.9
+        },
+            {
+                "age": 19.0,
+                "_vname_": "children",
+                "_yhat_": 19531.877043934743,
+                "_label_": "GradientBoostingRegressor",
+                "children": 4.0,
+                "_ids_": 0,
+                "bmi": 27.9
+            }]
+        self.cp1.profile = pd.DataFrame.from_records(records)
+        self.assertEqual(records + records + records, dump_profiles([self.cp1, self.cp1, self.cp1]))
+
+    def test_dump_observations(self):
+        self.cp1.new_observation = pd.DataFrame.from_dict({
+            "a": [1.2, 3.4, 2.6],
+            "c": [4, 5, 12]
+        })
+        self.cp1.all_variable_names = list(self.cp1.new_observation.columns)
+        self.cp1.selected_variables = ["a", "c"]
+        self.cp1.new_observation_predictions = [12, 3, 6]
+        self.cp1._label = "some_label"
+        # true values not given
+        self.cp1.new_observation_true = None
+        observations = dump_observations([self.cp1])
+        self.assertEqual(len(observations), 6)
+        self.assertEqual(observations[0]['_vname_'], "a")
+        self.assertEqual(observations[4]["_label_"], "some_label")
+        self.assertEqual(observations[3]["_y_"], None)
+
+    def test_dump_observations_2(self):
+        self.cp1.new_observation = pd.DataFrame.from_dict({
+            "a": [1.2, 3.4, 2.6],
+            "c": [4, 5, 12]
+        })
+        self.cp1.all_variable_names = list(self.cp1.new_observation.columns)
+        self.cp1.selected_variables = ["a"]
+        self.cp1.new_observation_predictions = [12, 3, 6]
+        self.cp1._label = "some_label"
+        self.cp1.new_observation_true = [13, 4, 5]
+        observations = dump_observations([self.cp1, self.cp1])
+        self.assertEqual(len(observations), 6)
+        self.assertEqual(observations[1]["_y_"], 4)

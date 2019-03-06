@@ -78,13 +78,13 @@ class CeterisParibus:
         self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
         self._label = explainer.label
-        self._all_variable_names = explainer.var_names
-        self._new_observation = new_observation
+        self.all_variable_names = explainer.var_names
+        self.new_observation = new_observation
         self.selected_variables = list(selected_variables)
         variable_splits = self._get_variable_splits(variable_splits)
         self.profile = self._calculate_profile(variable_splits)
-        self.new_observation_values = self._new_observation[self.selected_variables]
-        self.new_observation_predictions = self._predict_function(self._new_observation)
+        self.new_observation_values = self.new_observation[self.selected_variables]
+        self.new_observation_predictions = self._predict_function(self.new_observation)
         self.new_observation_true = y
 
     def _get_variable_splits(self, variable_splits):
@@ -134,7 +134,7 @@ class CeterisParibus:
         :return: DataFrame with profiles for a given variable
         """
         return pd.concat([self._single_observation_df(observation, var_name, var_split, profile_id)
-                          for profile_id, observation in self._new_observation.iterrows()], ignore_index=True)
+                          for profile_id, observation in self.new_observation.iterrows()], ignore_index=True)
 
     def _single_observation_df(self, observation, var_name, var_split, profile_id):
         """
@@ -149,7 +149,7 @@ class CeterisParibus:
         # grid_points and self._grid_point might differ for categorical variables
         grid_points = len(var_split)
         X = np.tile(observation, (grid_points, 1))
-        X_dict = OrderedDict(zip(self._all_variable_names, X.T))
+        X_dict = OrderedDict(zip(self.all_variable_names, X.T))
         df = pd.DataFrame.from_dict(X_dict)
         df[var_name] = var_split
         df['_yhat_'] = self._predict_function(df)

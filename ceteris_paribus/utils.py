@@ -14,7 +14,7 @@ def dump_profiles(profiles):
     """
     Dump profiles into json format accepted by the plotting library
 
-    :return: list of dicts representing points in the profile
+    :return: list of dicts representing points in the profiles
     """
     data = []
     for cp_profile in profiles:
@@ -39,11 +39,16 @@ def save_observations(profiles, filename):
 
 
 def dump_observations(profiles):
+    """
+    Dump observations data into json format accepted by the plotting library
+
+    :return: list of dicts representing observations in the profiles
+    """
     data = []
     for profile in profiles:
         for i, yhat in enumerate(profile.new_observation_predictions):
             for var_name in profile.selected_variables:
-                d = dict(zip(profile._all_variable_names, profile._new_observation.iloc[i]))
+                d = dict(zip(profile.all_variable_names, profile.new_observation.iloc[i]))
                 d['_vname_'] = var_name
                 d['_yhat_'] = yhat
                 d['_label_'] = profile._label
