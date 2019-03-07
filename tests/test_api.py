@@ -87,7 +87,7 @@ class TestClassification(unittest.TestCase):
         cp_profile = individual_variable_profile(self.explainer_rf, X_data, self.y[5])
         self.assertEqual(len(cp_profile.profile), len(self.iris['feature_names']) * cp_profile._grid_points)
 
-    def test_iris_classification_6(self):
+    def test_iris_classification_7(self):
         X_data = pd.DataFrame(self.X[5])
         with self.assertRaises(ValueError):
             cp_profile = individual_variable_profile(self.explainer_rf, X_data, self.y[5])
