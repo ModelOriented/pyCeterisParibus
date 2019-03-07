@@ -25,13 +25,21 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
             # make 1D array 2D
             new_observation = new_observation.reshape((1, -1))
         new_observation = pd.DataFrame(new_observation, columns=explainer.var_names)
-    if isinstance(y, pd.core.frame.DataFrame):
-        y = pd.Series(y[0])
     else:
-        y = pd.Series(y)
+        try:
+            new_observation.columns = explainer.var_names
+        except ValueError as e:
+            raise ValueError("Mismatched number of variables {} instead of {}".format(len(new_observation.columns),
+                                                                                      len(explainer.var_names)))
 
-    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
-    return cp_profiles
+    if y is not None:
+        if isinstance(y, pd.core.frame.DataFrame):
+            y = pd.Series(y[0])
+        else:
+            y = pd.Series(y)
+
+    cp_profile = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
+    return cp_profile
 
 
 def _get_variables(variables, explainer):
