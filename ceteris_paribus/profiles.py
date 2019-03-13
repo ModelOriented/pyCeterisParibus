@@ -1,12 +1,10 @@
-import json
 import logging
-import os
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
 
-from ceteris_paribus.plots import PLOTS_DIR
+from ceteris_paribus.utils import transform_into_Series
 
 
 def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101,
@@ -23,8 +21,24 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
     :return: instance of CeterisParibus class
     """
     variables = _get_variables(variables, explainer)
-    cp_profiles = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
-    return cp_profiles
+    if not isinstance(new_observation, pd.core.frame.DataFrame):
+        new_observation = np.array(new_observation)
+        if new_observation.ndim == 1:
+            # make 1D array 2D
+            new_observation = new_observation.reshape((1, -1))
+        new_observation = pd.DataFrame(new_observation, columns=explainer.var_names)
+    else:
+        try:
+            new_observation.columns = explainer.var_names
+        except ValueError as e:
+            raise ValueError("Mismatched number of variables {} instead of {}".format(len(new_observation.columns),
+                                                                                      len(explainer.var_names)))
+
+    if y is not None:
+        y = transform_into_Series(y)
+
+    cp_profile = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
+    return cp_profile
 
 
 def _get_variables(variables, explainer):
@@ -57,30 +71,43 @@ def _valid_variable_splits(variable_splits, variables):
 class CeterisParibus:
 
     def __init__(self, explainer, new_observation, y, selected_variables, grid_points, variable_splits):
+        """
+        Creates Ceteris Paribus object
+
+        :param explainer: explainer wrapping the model
+        :param new_observation: DataFrame with observations for which the profiles will be calculated
+        :param y: pandas Series with labels for the observations
+        :param selected_variables: variables for which the profiles are calculated
+        :param grid_points: number of points in a single variable split if calculated automatically
+        :param variable_splits: mapping of variables into points the profile will be calculated, if None then calculate with the function `_calculate_variable_splits`
+        """
         self._data = explainer.data
         self._predict_function = explainer.predict_fun
         self._grid_points = grid_points
         self._label = explainer.label
-        self._all_variable_names = list(explainer.var_names)
+        self.all_variable_names = explainer.var_names
+        self.new_observation = new_observation
         self.selected_variables = list(selected_variables)
-        self._new_observation = np.array(new_observation)
-        if self._new_observation.ndim == 1:
-            self._new_observation = np.array([self._new_observation])
         variable_splits = self._get_variable_splits(variable_splits)
         self.profile = self._calculate_profile(variable_splits)
-        variables_mask = [self._all_variable_names.index(var) for var in self.selected_variables]
-        self.new_observation_values = self._new_observation.take(variables_mask, axis=1)
-        self.new_observation_predictions = self._predict_function(self._new_observation)
-        self.new_observation_true = [y] if np.isscalar(y) else y
+        self.new_observation_values = self.new_observation[self.selected_variables]
+        self.new_observation_predictions = self._predict_function(self.new_observation)
+        self.new_observation_true = y
 
     def _get_variable_splits(self, variable_splits):
+        """
+        Helper function for calculating variable splits
+        """
         if variable_splits is None or not _valid_variable_splits(variable_splits, self.selected_variables):
-            variables_dict = dict(zip(self._all_variable_names, self._data.T))
+            variables_dict = self._data.to_dict(orient='series')
             chosen_variables_dict = dict((var, variables_dict[var]) for var in self.selected_variables)
             variable_splits = self._calculate_variable_splits(chosen_variables_dict)
         return variable_splits
 
     def _calculate_profile(self, variable_splits):
+        """
+        Calculate DataFrame profile
+        """
         profiles_list = [self._single_variable_df(var_name, var_split)
                          for var_name, var_split in variable_splits.items()]
         profile = pd.concat(profiles_list, ignore_index=True)
@@ -90,13 +117,15 @@ class CeterisParibus:
         """
         Calculate the split for a single variable
 
-        :param X_var: variable data
+        :param X_var: variable data - pandas Series
         :return: selected subset of values for the variable
         """
-        if np.issubdtype(X_var.dtype, np.integer):
+        if np.issubdtype(X_var.dtype, np.floating):
+            # grid points might be larger than the number of unique values
+            quantiles = np.linspace(0, 1, self._grid_points)
+            return np.quantile(X_var, quantiles)
+        else:
             return np.unique(X_var)
-        quantiles = np.linspace(0, 1, self._grid_points)
-        return np.quantile(X_var, quantiles)
 
     def _calculate_variable_splits(self, chosen_variables_dict):
         """
@@ -119,7 +148,7 @@ class CeterisParibus:
         :return: DataFrame with profiles for a given variable
         """
         return pd.concat([self._single_observation_df(observation, var_name, var_split, profile_id)
-                          for profile_id, observation in enumerate(self._new_observation)], ignore_index=True)
+                          for profile_id, observation in self.new_observation.iterrows()], ignore_index=True)
 
     def _single_observation_df(self, observation, var_name, var_split, profile_id):
         """
@@ -134,10 +163,10 @@ class CeterisParibus:
         # grid_points and self._grid_point might differ for categorical variables
         grid_points = len(var_split)
         X = np.tile(observation, (grid_points, 1))
-        X_dict = OrderedDict(zip(self._all_variable_names, X.T))
+        X_dict = OrderedDict(zip(self.all_variable_names, X.T))
         df = pd.DataFrame.from_dict(X_dict)
         df[var_name] = var_split
-        df['_yhat_'] = self._predict_function(df.values)
+        df['_yhat_'] = self._predict_function(df)
         df['_vname_'] = np.repeat(var_name, grid_points)
         df['_label_'] = self._label
         df['_ids_'] = profile_id
@@ -159,42 +188,3 @@ class CeterisParibus:
         print('Training data size: {}'.format(self._data.shape[0]))
         print(self.profile)
 
-    def save_profiles(self, profiles, filename):
-        data = self.dump_profiles(profiles)
-        with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
-            f.write("profile = {};".format(json.dumps(data, indent=2, default=self.default)))
-
-    def dump_profiles(self, profiles):
-        data = []
-        for cp_profile in profiles:
-            for i, row in cp_profile.profile.iterrows():
-                data.append(dict(zip(cp_profile.profile.columns, row)))
-        return data
-
-    @staticmethod
-    def default(o):
-        """
-        Workaround for dumping arrays with np.int64 type into json
-        From: https://stackoverflow.com/a/50577730/7828646
-
-        """
-        return int(o)
-
-    def save_observations(self, profiles, filename):
-        data = self.dump_observations(profiles)
-        with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
-            f.write("observation = {};".format(json.dumps(data, indent=2, default=self.default)))
-
-    def dump_observations(self, profiles):
-        data = []
-        for profile in profiles:
-            for i, yhat in enumerate(profile.new_observation_predictions):
-                for var_name in profile.selected_variables:
-                    d = dict(zip(profile._all_variable_names, profile._new_observation[i]))
-                    d['_vname_'] = var_name
-                    d['_yhat_'] = yhat
-                    d['_label_'] = profile._label
-                    d['_ids_'] = i
-                    d['_y_'] = profile.new_observation_true[i] if profile.new_observation_true is not None else None
-                    data.append(d)
-        return data

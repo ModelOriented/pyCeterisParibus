@@ -6,6 +6,7 @@ import webbrowser
 from flask import Flask, render_template
 
 from ceteris_paribus.plots import PLOTS_DIR
+from ceteris_paribus.utils import save_observations, save_profiles
 
 app = Flask(__name__, template_folder=PLOTS_DIR)
 
@@ -132,8 +133,8 @@ def plot(cp_profile, *args, destination="browser",
 
     all_profiles = [cp_profile] + list(args)
 
-    cp_profile.save_observations(all_profiles, 'obs{}.js'.format(plot_id))
-    cp_profile.save_profiles(all_profiles, "profile{}.js".format(plot_id))
+    save_observations(all_profiles, 'obs{}.js'.format(plot_id))
+    save_profiles(all_profiles, "profile{}.js".format(plot_id))
 
     with app.app_context():
         data = render_template("plot_template.html", i=plot_id, params=params)

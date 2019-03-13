@@ -10,12 +10,7 @@ def _normalize_mixed_data_columns(arr):
     Returns the numpy array representation of the data.
     Loses information about the types
     """
-    if isinstance(arr, pd.DataFrame) or isinstance(arr, pd.core.series.Series):
-        return np.array(arr, dtype=object)
-    elif isinstance(arr, np.ndarray):
-        return arr
-    else:
-        return np.array(arr, dtype=object)
+    return np.array(arr, dtype=object)
 
 
 def _calc_range_mixed_data_columns(data, observation, dtypes):
@@ -62,22 +57,13 @@ def _gower_dist(xi, xj, ranges, dtypes):
 def gower_distances(data, observation):
     """
     Return an array of distances between all observations and a chosen one
-
     Based on:
-
     https://sourceforge.net/projects/gower-distance-4python
-
     https://beta.vu.nl/nl/Images/stageverslag-hoven_tcm235-777817.pdf
+    :type data: DataFrame
+    :type observation: pandas Series
     """
-    if hasattr(data, 'dtypes'):
-        dtypes = data.dtypes
-    elif hasattr(data, 'dtype'):
-        dtypes = [data.dtype] * len(data)
-    else:
-        # TODO maybe strictly specify accepted format
-        data = pd.DataFrame(data)
-        dtypes = data.dtypes
-
+    dtypes = data.dtypes
     data = _normalize_mixed_data_columns(data)
     observation = _normalize_mixed_data_columns(observation)
     ranges = _calc_range_mixed_data_columns(data, observation, dtypes)

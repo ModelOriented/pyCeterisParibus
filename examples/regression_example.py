@@ -30,19 +30,14 @@ if __name__ == "__main__":
     explainer_rf = explain(model, variable_names, data, labels)
 
     cp_profile = individual_variable_profile(explainer_rf, X_train[0], y=y_train[0], variables=['TAX', 'CRIM'])
-    # plot(cp_profile, show_residuals=True)
     plot(cp_profile)
 
     sample = select_sample(X_train, n=3)
     cp2 = individual_variable_profile(explainer_rf, sample, variables=['TAX', 'CRIM'])
     plot(cp2)
-    # plot(cp2)
-    #cp2.dump_json("b.json")
 
     neighbours = select_neighbours(X_train, X_train[0], variable_names=variable_names,
                                    selected_variables=variable_names, n=15)
     cp3 = individual_variable_profile(explainer_rf, neighbours, variables=['LSTAT', 'RM'],
                                       variable_splits={'LSTAT': [10, 20, 30], 'RM': [4, 5, 6, 7]})
     plot(cp3)
-    # plot(cp3, aggregate_profiles=np.mean)
-    #cp3.dump_json("c.json")
