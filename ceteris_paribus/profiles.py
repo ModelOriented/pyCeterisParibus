@@ -4,6 +4,8 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
+from ceteris_paribus.utils import transform_into_Series
+
 
 def individual_variable_profile(explainer, new_observation, y=None, variables=None, grid_points=101,
                                 variable_splits=None):
@@ -33,10 +35,7 @@ def individual_variable_profile(explainer, new_observation, y=None, variables=No
                                                                                       len(explainer.var_names)))
 
     if y is not None:
-        if isinstance(y, pd.core.frame.DataFrame):
-            y = pd.Series(y[0])
-        else:
-            y = pd.Series(y)
+        y = transform_into_Series(y)
 
     cp_profile = CeterisParibus(explainer, new_observation, y, variables, grid_points, variable_splits)
     return cp_profile

@@ -1,6 +1,8 @@
 import json
 import os
 
+import pandas as pd
+
 from ceteris_paribus.plots import PLOTS_DIR
 
 
@@ -56,3 +58,11 @@ def dump_observations(profiles):
                 d['_y_'] = profile.new_observation_true[i] if profile.new_observation_true is not None else None
                 data.append(d)
     return data
+
+
+def transform_into_Series(y):
+    if isinstance(y, pd.core.frame.DataFrame):
+        y = pd.Series(y.iloc[:, 0])
+    else:
+        y = pd.Series(y)
+    return y
