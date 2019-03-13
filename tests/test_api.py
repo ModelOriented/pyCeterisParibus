@@ -179,14 +179,14 @@ class TestKeras(unittest.TestCase):
         self.assertEqual(len(cp.new_observation_true), 10)
         self.assertEqual(len(cp.profile), cp._grid_points * 5 * 10)
 
-    def test_keras_1(self):
+    def test_keras_2(self):
         cp = individual_variable_profile(self.explainer_keras, pd.DataFrame(self.x_train[:10]),
                                          y=list(self.y_train[:10]),
                                          variables=["CRIM", "ZN", "AGE", "INDUS", "B"])
         self.assertEqual(len(cp.new_observation_true), 10)
         self.assertEqual(len(cp.profile), cp._grid_points * 5 * 10)
 
-    def test_keras_1(self):
+    def test_keras_3(self):
         cp = individual_variable_profile(self.explainer_keras, self.x_train[5], y=self.y_train[5],
                                          variables=["CRIM", "ZN", "AGE", "INDUS", "B"])
         self.assertEqual(len(cp.new_observation_true), 1)

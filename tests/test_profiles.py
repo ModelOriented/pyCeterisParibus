@@ -1,11 +1,12 @@
 import unittest
+from collections import OrderedDict
 from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
 
 from ceteris_paribus.profiles import _get_variables, CeterisParibus, _valid_variable_splits
-from ceteris_paribus.utils import dump_profiles, dump_observations
+from ceteris_paribus.utils import dump_profiles, dump_observations, transform_into_Series
 
 
 class TestProfiles(unittest.TestCase):
@@ -214,3 +215,18 @@ class TestProfilesUtils(unittest.TestCase):
         observations = dump_observations([self.cp1, self.cp1])
         self.assertEqual(len(observations), 6)
         self.assertEqual(observations[1]["_y_"], 4)
+
+    def test_transform_into_Series_1(self):
+        a = [1, 4, 2]
+        b = transform_into_Series(a)
+        np.testing.assert_array_equal(a, b)
+
+    def test_transform_into_Series_2(self):
+        a = np.array([4, 1, 6])
+        b = transform_into_Series(a)
+        np.testing.assert_array_equal(a, b)
+
+    def test_transform_into_Series_3(self):
+        a = pd.DataFrame(OrderedDict(zip(['a', 'b'], [[1, 2, 3], [4, 2, 1]])))
+        b = transform_into_Series(a)
+        np.testing.assert_array_equal(b, [1, 2, 3])
