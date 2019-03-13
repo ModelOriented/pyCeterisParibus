@@ -166,5 +166,5 @@ plot(cp_rf1, cp_rf2, cp_rf3, selected_variables=['petal length (cm)', 'petal wid
 ![Multiclass models](misc/multiclass_models.png)
 
 
-### Acknowledgments
+## Acknowledgments
 Work on this package was financially supported by the ‘NCN Opus grant 2016/21/B/ST6/0217’.
