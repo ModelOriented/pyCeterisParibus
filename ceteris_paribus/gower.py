@@ -27,6 +27,7 @@ def _calc_range_mixed_data_columns(data, observation, dtypes):
 def _gower_dist(xi, xj, ranges, dtypes):
     """
     Return gower's distance between xi and xj
+
     :param ranges: ranges of values for each column
     :param dtypes: types of each column
     """
@@ -60,6 +61,7 @@ def gower_distances(data, observation):
     Based on:
     https://sourceforge.net/projects/gower-distance-4python
     https://beta.vu.nl/nl/Images/stageverslag-hoven_tcm235-777817.pdf
+    
     :type data: DataFrame
     :type observation: pandas Series
     """
