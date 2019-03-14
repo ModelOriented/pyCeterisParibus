@@ -40,26 +40,27 @@ def _select_columns(data, observation, variable_names=None, selected_variables=N
     """
     Select data with specified columns
 
-    :param data: array or DataFrame with observations
-    :param observation: reference observation for neighbours selection
+    :param data: DataFrame with observations
+    :param observation: pandas Series with reference observation for neighbours selection
     :param variable_names: names of all variables
     :param selected_variables: names of selected variables
     :return: DataFrame with observations and pandas Series with referenced observation, with selected columns
     """
     if selected_variables is None:
-        return pd.DataFrame(data), transform_into_Series(observation)
+        return data, observation
     try:
-        indices = [variable_names.index(var) for var in selected_variables]
+        if variable_names is None:
+            if isinstance(data, pd.core.frame.DataFrame):
+                variable_names = data.columns
+            else:
+                raise ValueError("Impossible to detect variable names")
+        indices = [list(variable_names).index(var) for var in selected_variables]
     except ValueError:
         logging.warning("Selected variables: {} is not a subset of variables: {}".format(
             selected_variables, variable_names))
-        return pd.DataFrame(data), transform_into_Series(observation)
-
-    if not isinstance(data, pd.core.frame.DataFrame):
-        data = pd.DataFrame(data)
+        return data, observation
 
     subset_data = data.iloc[:, indices].reset_index(drop=True)
-    observation = transform_into_Series(observation)
     return subset_data, observation[indices]
 
 
@@ -80,17 +81,23 @@ def select_neighbours(data, observation, y=None, variable_names=None, selected_v
         logging.warning("Given n ({}) is larger than data size ({})".format(n, data.shape[0]))
         n = data.shape[0]
 
-    data, observation = _select_columns(data, observation, variable_names, selected_variables)
+    if not isinstance(data, pd.core.frame.DataFrame):
+        data = pd.DataFrame(data)
+    observation = transform_into_Series(observation)
+
+    # columns are selected for the purpose of distance calculation
+    selected_data, observation = _select_columns(data, observation, variable_names, selected_variables)
 
     if dist_fun == 'gower':
-        distances = gower_distances(data, observation)
+        distances = gower_distances(selected_data, observation)
     else:
         if not callable(dist_fun):
             raise ValueError('Distance has to be "gower" or a custom function')
-        distances = dist_fun([observation], data)[0]
+        distances = dist_fun([observation], selected_data)[0]
 
     indices = np.argpartition(distances, n - 1)[:n]
 
+    # selected points have all variables
     selected_points = data.iloc[indices]
     selected_points.reset_index(drop=True, inplace=True)
     if y is not None:

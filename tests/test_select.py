@@ -78,6 +78,24 @@ class TestSelect(unittest.TestCase):
         sample_x = select_neighbours(pd.DataFrame(self.x), np.array([4, 3, 2]), n=300)
         self.assertEqual(len(sample_x), len(self.x))
 
+    def test_select_neighbours_7(self):
+        sample_x = select_neighbours(pd.DataFrame(self.x, columns=['a', 'b', 'c']), [4, 1, 5], n=2,
+                                     selected_variables=['a', 'b'])
+        self.assertEqual(sample_x.shape, (2, 3))
+
+    def test_select_neighbours_8(self):
+        sample_x = select_neighbours(pd.DataFrame(self.x, columns=['a', 'b', 'c']), [4, 1, 5], n=10,
+                                     selected_variables=['a', 'd'])
+        sample_x2 = select_neighbours(pd.DataFrame(self.x), [4, 1, 5], n=10)
+        np.testing.assert_array_equal(sample_x, sample_x2)
+
+    def test_select_neighbours_9(self):
+        sample_x = select_neighbours(pd.DataFrame(self.x, columns=['a', 'b', 'c']), [4, 1, 5], n=10,
+                                     variable_names=['a', 'b', 'c'],
+                                     selected_variables=['a', 'd'])
+        sample_x2 = select_neighbours(pd.DataFrame(self.x), [4, 1, 5], n=10)
+        np.testing.assert_array_equal(sample_x, sample_x2)
+
     @staticmethod
     def select_columns_helper(true, result):
         np.testing.assert_array_equal(true[0], result[0])
@@ -85,18 +103,19 @@ class TestSelect(unittest.TestCase):
 
     def test_select_columns_1(self):
         observation = self.x[0]
-        self.select_columns_helper((self.x, observation), _select_columns(self.x, observation))
+        self.select_columns_helper((pd.DataFrame(self.x), pd.Series(observation)), _select_columns(self.x, observation))
 
     def test_select_columns_2(self):
         observation = self.x[0]
         variables = ['var1', 'var2', 'var3']
-        self.select_columns_helper((self.x, observation), _select_columns(self.x, observation, variables, variables))
+        self.select_columns_helper((pd.DataFrame(self.x), pd.Series(observation)),
+                                   _select_columns(pd.DataFrame(self.x), pd.Series(observation), variables, variables))
 
     def test_select_columns_3(self):
         observation = self.x[0]
         variables = ['var1', 'var2', 'var3']
         selected_variables = ['var3', 'var2']
-        subset = _select_columns(self.x, observation, variable_names=variables,
+        subset = _select_columns(pd.DataFrame(self.x), pd.Series(observation), variable_names=variables,
                                  selected_variables=selected_variables)
         self.select_columns_helper(subset, (self.x[:, [2, 1]], observation[[2, 1]]))
 
@@ -106,7 +125,7 @@ class TestSelect(unittest.TestCase):
         variables = ['var1', 'var2', 'var3']
         # selection of invalid variable
         selected_variables = ['var4', 'var2']
-        subset = _select_columns(self.x, observation, variable_names=variables,
+        subset = _select_columns(pd.DataFrame(self.x), pd.Series(observation), variable_names=variables,
                                  selected_variables=selected_variables)
         self.select_columns_helper(subset, (self.x, observation))
 
