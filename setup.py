@@ -26,4 +26,16 @@ setup(name=PACKAGE_NAME,
       author_email='michal.kuzba@students.mimuw.edu.pl',
       packages=find_packages(exclude=['examples', 'tests']),
       package_data={'ceteris_paribus': ['plots/ceterisParibusD3.js', 'plots/plot_template.html', 'datasets/*.csv']},
-      install_requires=get_requirements())
+      install_requires=get_requirements(),
+      classifiers=[
+          'Intended Audience :: Science/Research',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: Apache Software License',
+          'Operating System :: OS Independent',
+          'Programming Language :: Python :: 3',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Topic :: Scientific/Engineering :: Artificial Intelligence',
+          'Topic :: Scientific/Engineering :: Visualization'
+      ])
