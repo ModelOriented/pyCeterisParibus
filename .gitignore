@@ -11,3 +11,6 @@ ceteris_paribus/plots/plots*.html
 /docs/_build/
 
 **/.ipynb_checkpoints
+/build/
+/pyCeterisParibus.egg-info/
+/dist/
