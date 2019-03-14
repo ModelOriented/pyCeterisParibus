@@ -7,9 +7,14 @@
 Python library for Ceteris Paribus Plots. See original R package: https://github.com/pbiecek/ceterisParibus
 
 ## Setup
-Works on Python 3.5+
+Tested on Python 3.5+
 
-In order to install the package execute:
+PyCeterisParibus is on [PyPI](https://pypi.org/project/pyCeterisParibus/). Simply run:
+
+```sh
+pip install pyCeterisParibus
+```
+or install the newest version from GitHub by executing:
 ```
 pip install git+https://github.com/ModelOriented/pyCeterisParibus
 ```
