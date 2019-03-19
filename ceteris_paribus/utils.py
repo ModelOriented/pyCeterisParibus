@@ -1,9 +1,7 @@
 import json
-import os
 
+import numpy as np
 import pandas as pd
-
-from ceteris_paribus.plots import PLOTS_DIR
 
 
 def save_profiles(profiles, filename):
@@ -31,7 +29,9 @@ def default(o):
     From: https://stackoverflow.com/a/50577730/7828646
 
     """
-    return int(o)
+    if isinstance(o, np.int64):
+        return int(o)
+    return float(o)
 
 
 def save_observations(profiles, filename):
