@@ -1,14 +1,12 @@
 import json
-import os
 
+import numpy as np
 import pandas as pd
-
-from ceteris_paribus.plots import PLOTS_DIR
 
 
 def save_profiles(profiles, filename):
     data = dump_profiles(profiles)
-    with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
+    with open(filename, 'w') as f:
         f.write("profile = {};".format(json.dumps(data, indent=2, default=default)))
 
 
@@ -31,12 +29,14 @@ def default(o):
     From: https://stackoverflow.com/a/50577730/7828646
 
     """
-    return int(o)
+    if isinstance(o, np.int64):
+        return int(o)
+    return float(o)
 
 
 def save_observations(profiles, filename):
     data = dump_observations(profiles)
-    with open(os.path.join(PLOTS_DIR, filename), 'w') as f:
+    with open(filename, 'w') as f:
         f.write("observation = {};".format(json.dumps(data, indent=2, default=default)))
 
 
