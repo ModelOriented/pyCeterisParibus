@@ -14,3 +14,6 @@ ceteris_paribus/plots/plots*.html
 /build/
 /pyCeterisParibus.egg-info/
 /dist/
+
+# data files produced for plots
+**/_plot_files

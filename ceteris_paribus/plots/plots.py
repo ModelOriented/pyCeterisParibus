@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import webbrowser
+from shutil import copyfile
 
 from flask import Flask, render_template
 
@@ -11,8 +12,15 @@ from ceteris_paribus.utils import save_observations, save_profiles
 app = Flask(__name__, template_folder=PLOTS_DIR)
 
 MAX_PLOTS_PER_SESSION = 10000
+
 # generates ids for subsequent plots
-number = iter(range(MAX_PLOTS_PER_SESSION))
+_PLOT_NUMBER = iter(range(MAX_PLOTS_PER_SESSION))
+
+# directory with all files produced in plot generation process
+_DATA_PATH = '_plot_files'
+os.makedirs(_DATA_PATH, exist_ok=True)
+_D3_engine_filename = 'ceterisParibusD3.js'
+copyfile(os.path.join(PLOTS_DIR, _D3_engine_filename), os.path.join(_DATA_PATH, _D3_engine_filename))
 
 
 def _calculate_plot_variables(cp_profile, selected_variables):
@@ -127,27 +135,35 @@ def plot(cp_profile, *args, destination="browser",
                         "Available values are: 'mean' and 'median'".format(aggregate_profiles))
         params['aggregate_profiles'] = None
 
-    plot_id = str(next(number))
-    with open(os.path.join(PLOTS_DIR, "params{}.js".format(plot_id)), 'w') as f:
-        f.write("params = " + json.dumps(params, indent=2) + ";")
-
     all_profiles = [cp_profile] + list(args)
 
-    save_observations(all_profiles, 'obs{}.js'.format(plot_id))
-    save_profiles(all_profiles, "profile{}.js".format(plot_id))
+    plot_id = str(next(_PLOT_NUMBER))
+    plot_path, params_path, obs_path, profile_path = get_data_paths(plot_id)
+
+    with open(params_path, 'w') as f:
+        f.write("params = " + json.dumps(params, indent=2) + ";")
+
+    save_observations(all_profiles, obs_path)
+    save_profiles(all_profiles, profile_path)
 
     with app.app_context():
         data = render_template("plot_template.html", i=plot_id, params=params)
 
-    with open(os.path.join(PLOTS_DIR, "plots{}.html").format(plot_id), 'w') as f:
+    with open(plot_path, 'w') as f:
         f.write(data)
-
-    plot_path = os.path.join(PLOTS_DIR, "plots{}.html".format(plot_id))
 
     destination = _detect_plot_destination(destination)
     if destination == "notebook":
         from IPython.display import IFrame, display
-        display(IFrame(os.path.relpath(plot_path), width=int(width * 1.1), height=int(height * 1.1)))
+        display(IFrame(plot_path, width=int(width * 1.1), height=int(height * 1.1)))
     else:
         # open plot in a browser
-        webbrowser.open("file://{}".format(plot_path))
+        webbrowser.open(plot_path)
+
+
+def get_data_paths(plot_id):
+    plot_path = os.path.join(_DATA_PATH, "plots{}.html".format(plot_id))
+    params_path = os.path.join(_DATA_PATH, "params{}.js".format(plot_id))
+    obs_path = os.path.join(_DATA_PATH, 'obs{}.js'.format(plot_id))
+    profile_path = os.path.join(_DATA_PATH, "profile{}.js".format(plot_id))
+    return plot_path, params_path, obs_path, profile_path
