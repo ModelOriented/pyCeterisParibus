@@ -64,7 +64,7 @@ def plot(cp_profile, *args, destination="browser",
          color_points=None, size_points=None, alpha_points=None,
          color_residuals=None, size_residuals=None, alpha_residuals=None,
          height=500, width=600,
-         plot_title='', y_label='y',
+         plot_title='', yaxis_title='y',
          print_observations=True,
          **kwargs):
     """
@@ -94,7 +94,7 @@ def plot(cp_profile, *args, destination="browser",
     :param height: height of the window containing plots
     :param width: width of the window containing plots
     :param plot_title: Title of the plot displayed above
-    :param y_label: Label for the y axis
+    :param yaxis_title: Label for the y axis
     :param print_observations: whether to print the table with observations values
     :param kwargs: other options passed to the plot
     """
@@ -118,7 +118,7 @@ def plot(cp_profile, *args, destination="browser",
                             size_points=size_points, alpha_points=alpha_points, color_points=color_points,
                             size_residuals=size_residuals, alpha_residuals=alpha_residuals,
                             color_residuals=color_residuals,
-                            y_label=y_label)
+                            yaxis_title=yaxis_title)
 
     if aggregate_profiles in {'mean', 'median', None}:
         params['aggregate_profiles'] = aggregate_profiles
