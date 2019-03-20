@@ -4,22 +4,36 @@
 [![Documentation Status](https://readthedocs.org/projects/pyceterisparibus/badge/?version=latest)](https://pyceterisparibus.readthedocs.io/en/latest/?badge=latest)
 
 # pyCeterisParibus
-Python library for Ceteris Paribus Plots. See original R package: https://github.com/pbiecek/ceterisParibus
+pyCeterisParibus is a Python library based on an *R* package [CeterisParibus](https://github.com/pbiecek/ceterisParibus).
+It implements Ceteris Paribus Plots.
+They allow to understand how model response would changes if a selected variable is changes. 
+It’s a perfect tool for What-If scenarios. Ceteris Paribus is a Latin phrase meaning all else unchanged. 
+These plots present the change in model response as the values of one feature change with all others being fixed. 
+Ceteris Paribus method is model-agnostic - it works for any Machine Learning model.
+The idea is an extension of PDP (Partial Dependency Plots) and ICE (Individual Conditional Expectations) plots.
+It allows explaining single observations for multiple variables at the same time.
+The plot engine is developed [here](https://github.com/MI2DataLab/ceterisParibusExt).
+
+## Why is it so useful?
+There might be several motivations behind utilizing this idea. 
+Imagine a person gets a low credit score. 
+The client wants to understand how to increase the score and the scoring institution (e.g. a bank) should be able to answer such questions. 
+Moreover, this method is useful for researchers and developers to analyze, debug, explain and improve Machine Learning models, assisting the entire process of the model design.
 
 ## Setup
 Tested on Python 3.5+
 
 PyCeterisParibus is on [PyPI](https://pypi.org/project/pyCeterisParibus/). Simply run:
 
-```sh
+```bash
 pip install pyCeterisParibus
 ```
 or install the newest version from GitHub by executing:
-```
+```bash
 pip install git+https://github.com/ModelOriented/pyCeterisParibus
 ```
 or download the sources, enter the main directory and perform:
-```
+```bash
 https://github.com/ModelOriented/pyCeterisParibus.git
 cd pyCeterisParibus
 python setup.py install   # (alternatively use pip install .)
@@ -31,113 +45,156 @@ Latest documentation is hosted here:
 https://pyceterisparibus.readthedocs.io
 
 To build the documentation locally:
-```
+```bash
 cd docs
 make html
 ```
 and open `_build/html/index.html`
 
+## Examples
+Below we present use cases on two well-known datasets - Titanic and Iris. More examples e.g. for regression problems might be found [here](examples).
 
-## How to use Ceteris Paribus profiles?
+## Use case - Titanic survival
+We demonstrate Ceteris Paribus Plots using the well-known Titanic dataset. In this problem, we examine the chance of survival for Titanic passengers.
+We start from preprocessing the data and creating an XGBoost model.
+```python
+import pandas as pd
+df = pd.read_csv('titanic_train.csv')
 
-### Prepare data
+y = df['Survived']
+x = df.drop(['Survived', 'PassengerId', 'Name', 'Cabin', 'Ticket'],
+    inplace=False, axis=1)
+    
+valid = x['Age'].isnull() | x['Embarked'].isnull()
+x = x[-valid]
+y = y[-valid]
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(x, y,
+    test_size=0.2, random_state=42)
 ```
-df = pd.read_csv('../datasets/insurance.csv')
-df = df[['age', 'bmi', 'children', 'charges']]
-x = df.drop(['charges'], inplace=False, axis=1)
-y = df['charges']
-var_names = list(x.columns)
-x = x.values
-y = y.values
-```
+```python
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
-### Train models
-```
-def linear_regression_model():
-    linear_model = LinearRegression()
-    linear_model.fit(x, y)
-    # model, data, labels, variable_names
-    return linear_model, x, y, var_names
+# We create the preprocessing pipelines for both numeric and categorical data.
+numeric_features = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
+numeric_transformer = Pipeline(steps=[
+    ('scaler', StandardScaler())])
 
-def gradient_boosting_model():
-    gb_model = ensemble.GradientBoostingRegressor(n_estimators=1000, random_state=42)
-    gb_model.fit(x, y)
-    return gb_model, x, y, var_names
+categorical_features = ['Embarked', 'Sex']
+categorical_transformer = Pipeline(steps=[
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))])
 
-def supported_vector_machines_model():
-    svm_model = svm.SVR(C=0.01, gamma='scale', kernel='poly')
-    svm_model.fit(x, y)
-    return svm_model, x, y, var_names
-```
-
-### Wrap models into explainers objects
-```
-(linear_model, data, labels, variable_names) = linear_regression_model()
-(gb_model, _, _, _) = gradient_boosting_model()
-(svm_model, _, _, _) = supported_vector_machines_model()
-
-explainer_linear = explain(linear_model, variable_names, data, y)
-explainer_gb = explain(gb_model, variable_names, data, y)
-explainer_svm = explain(svm_model, variable_names, data, y)
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numeric_features),
+        ('cat', categorical_transformer, categorical_features)])
 ```
 
-### Single variable response
-
+```python
+xgb_clf = Pipeline(steps=[('preprocessor', preprocessor),
+('classifier', XGBClassifier())])
+xgb_clf.fit(X_train, y_train)
 ```
+
+The model is wrapped into the unified form.
+```python
+from ceteris_paribus.explainer import explain
+explainer_xgb = explain(xgb_clf, data=x, y=y, label='XGBoost',
+    predict_function=lambda X: xgb_clf.predict_proba(X)[::, 1])
+```
+
+
+### Single variable profile
+Let's look at Mr Ernest James Crease, the 19-year-old man, travelling on the 3. class from Southampton with an 8 pounds ticket in his pocket. He died on Titanic. Most likely, this would not have been the case had Ernest been a few years younger.
+This plot presents the chance of survival for a person like Ernest at different ages. We can see things were tough for people like him unless they were a child.
+
+```python
+ernest = X_test.iloc[10]
+label_ernest = y_test.iloc[10]
 from ceteris_paribus.profiles import individual_variable_profile
-from ceteris_paribus.plots.plots import plot_d3
-
-cp = individual_variable_profile(explainer_gb, x[0], y[0], variables={'bmi'})
-plot(cp, show_residuals=True)
+cp_xgb = individual_variable_profile(explainer_xgb, ernest, label_ernest)
 ```
-![Single Variable Plot](misc/single_variable_plot.png)
 
+Having calculated the profile we can plot it. Note, that `plot_notebook` might be used instead of `plot` when used in Jupyter notebooks.
 
-### Local fit
-
+```python
+from ceteris_paribus.plots.plots import plot
+plot(cp_xgb, selected_variables=["Age"])
 ```
-from ceteris_paribus.select_data import select_neighbours
 
-neighbours_x, neighbours_y = select_neighbours(x, x[0], y=y, n=15)
-cp_2 = individual_variable_profile(explainer_gb,
-        neighbours_x, neighbours_y)
-plot(cp_2, show_residuals=True, selected_variables=["bmi"])
-```
-![Local fit plot](misc/local_fit.png)
-
-
-### Average response
-
-```
-plot(cp_2, aggregate_profiles="mean", selected_variables=["age"])
-```
-![Average response](misc/average_response.png)
-
-
-
-### Many variables
-
-```
-plot(cp_1, selected_variables=["bmi", "age", "children"])
-```
-![Many variables](misc/many_variables.png)
-
+![Chance of survival depending on age](misc/titanic_single_response.png)
 
 ### Many models
-```
-cp_svm = individual_variable_profile(explainer_svm, x[0], y[0])
-cp_linear = individual_variable_profile(explainer_linear, x[0], y[0])
-plot(cp_1, cp_svm, cp_linear)
-```
-![Many models](misc/many_models.png)
+The above picture explains the prediction of XGBoost model. What if we compare various models?
 
-### Model interactions
-```
-plot(cp_2, color="bmi")
-```
-![Model interactions](misc/color_by_default.png)
+```python
+rf_clf = Pipeline(steps=[('preprocessor', preprocessor),
+    ('classifier', RandomForestClassifier())])
+linear_clf = Pipeline(steps=[('preprocessor', preprocessor),
+    ('classifier', LogisticRegression())])
+    
+rf_clf.fit(X_train, y_train)
+linear_clf.fit(X_train, y_train)
 
-### Multiclass models (classification problem)
+explainer_rf = explain(rf_clf, data=x, y=y, label='RandomForest',
+    predict_function=lambda X: rf_clf.predict_proba(X)[::, 1])
+explainer_linear = explain(linear_clf, data=x, y=y, label='LogisticRegression', 
+    predict_function=lambda X: linear_clf.predict_proba(X)[::, 1])
+    
+plot(cp_xgb, cp_rf, cp_linear, selected_variables=["Age"])
+```
+
+![Chance of survival for various models](misc/titanic_many_models.png)
+
+Clearly, XGBoost offers a better fit than Logistic Regression and is less overfitted than a Random Forest model.
+
+### Many variables
+This time we have a look at Miss. Elizabeth Mussey Eustis. She is 54 years old, travels at 1. class with her sister Marta, as they return to the US from their tour of southern Europe. They both survived the disaster.
+
+```python
+elizabeth = X_test.iloc[1]
+label_elizabeth = y_test.iloc[1]
+cp_xgb_2 = individual_variable_profile(explainer_xgb, elizabeth, label_elizabeth)
+```
+
+```python
+plot(cp_xgb_2, selected_variables=["Pclass", "Sex", "Age", "Embarked"])
+```
+
+![Many variables](misc/titanic_many_variables.png)
+
+Would she have returned home if she had travelled at 3. class or if she had been a man? As we can observe this is less likely. On the other hand, for a first class, female passenger chances of survival were high regardless of age. Note, this was different in the case of Ernest. Place of embarkment (Cherbourg) has no influence, which is expected behaviour.
+
+### Feature interactions and average response
+Now, what if we look at passengers most similar to Miss. Eustis (middle-aged, upper class)?
+
+```python
+from ceteris_paribus.select_data import select_neighbours
+neighbours = select_neighbours(X_train, elizabeth, 
+    selected_variables=['Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked'], 
+    n=15)
+cp_xgb_ns = individual_variable_profile(explainer_xgb, neighbours)
+```
+
+```python
+plot(cp_xgb_ns, color="Sex", selected_variables=["Pclass", "Age"], 
+    aggregate_profiles='mean', size_pdps=6, alpha_pdps=1, size=2)
+```
+
+Plot function comes with an extensive customization options. List of all parameters might be found in documentation.
+
+![Influence of gender](misc/titanic_interactions_average.png)
+
+There are two distinct clusters of passengers determined with their gender. Therefore a *PDP* average plot (on grey) does not show the whole picture. Children of both genders were likely to survive, but then we see a large gap. Also, being female increased the chance of survival mostly for second and first class passengers.
+
+Additionally, one can interact with the plot by hovering over a point of interest to see more details. Similarly, there is an interactive table with options for highlighting relevant elements as well as filtering and sorting rows.
+
+
+
+### Multiclass models - Iris dataset
 Prepare dataset and model
 ```
 iris = load_iris()
