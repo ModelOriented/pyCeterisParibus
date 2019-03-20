@@ -60,15 +60,20 @@
         this.default_plot_title = 'Ceteris Paribus plots per variable - predictions vs. variable values';
         this.default_yaxis_title = 'y';
 
-        /*
-        this.default_legend_keys_size = 7;
-
-        if (options.hasOwnProperty('legend_keys_size') && options.legend_keys_size !== null){
-            this.legend_keys_size_ = options.legend_keys_size;
-        } else {
-            this.legend_keys_size_ = this.default_legend_keys_size;
+        function isObject(obj) {
+            return obj === Object(obj);
         }
-        */
+
+        /*
+            this.default_legend_keys_size = 7;
+
+            if (options.hasOwnProperty('legend_keys_size') && options.legend_keys_size !== null){
+                this.legend_keys_size_ = options.legend_keys_size;
+            } else {
+                this.legend_keys_size_ = this.default_legend_keys_size;
+            }
+            */
+        this.last_error_message_ = '';
 
 
         // handling user div
@@ -76,27 +81,231 @@
             div = document.getElementById(div);
         }
 
-
         try {
             if (!div) {
                 throw new Error('Container div for CeterisParibusPlot does not exist! Stopping execution.');
             }
         } catch (e) {
             console.log(e.message)
+            this.last_error_message_ = e.message;
             //alert(e.message)
             return;
         }
+
 
         // take d3.selection, not pure html selection
         this.userDiv_ = d3.select('#' + div.id);
 
 
+        try {
+            if (this.userDiv_.node().tagName != 'DIV') {
+                throw new Error('Given container is not a div! Stopping execution.');
+            }
+        } catch (e) {
+            console.log(e.message)
+            this.last_error_message_ = e.message;
+            //alert(e.message)
+            return;
+        }
+
+
         // handling data
+
+        // data
+
+        try {
+
+            if (data === null || data === undefined || data.length == 0) {
+                var msg = 'There are no CP profiles in dataset! Stopping execution.';
+                throw new Error(msg);
+            } else if (!jQuery.isArray(data)) {
+                var msg = '`data` is not an array! Stopping execution';
+                throw new Error(msg);
+            } else if (!isObject(data[0])) {
+                var msg = '`data` is not an array of objects! Stopping execution';
+                throw new Error(msg);
+            } else {
+                var hasAllRequiredKeys = data[0].hasOwnProperty('_ids_') && data[0].hasOwnProperty('_label_') && data[0].hasOwnProperty('_vname_') && data[0].hasOwnProperty('_yhat_');
+                if (!hasAllRequiredKeys) {
+                    var msg = '`data` does not have all required keys (_ids_, _label_, _vname_, _yhat_)! Stopping execution';
+                    throw new Error(msg);
+                }
+            }
+
+        } catch (e) {
+            console.log(e.message)
+            this.last_error_message_ = e.message;
+            return;
+        }
+
+        // dataObs
+
+        try {
+
+            if (dataObs === null || dataObs === undefined || dataObs.length == 0) {
+                var msg = 'There are no observations in dataset dataObs! Stopping execution.';
+                throw new Error(msg);
+            } else if (!jQuery.isArray(dataObs)) {
+                var msg = '`dataObs` is not an array! Stopping execution';
+                throw new Error(msg);
+            } else if (!isObject(dataObs[0])) {
+                var msg = '`dataObs` is not an array of objects! Stopping execution';
+                throw new Error(msg);
+            } else {
+                var hasAllRequiredKeys = dataObs[0].hasOwnProperty('_ids_') && dataObs[0].hasOwnProperty('_label_') && dataObs[0].hasOwnProperty('_y_') && dataObs[0].hasOwnProperty('_yhat_');
+                if (!hasAllRequiredKeys) {
+                    var msg = '`dataObs` does not have all required keys (_ids_, _label_, _y_, _yhat_)! Stopping execution';
+                    throw new Error(msg);
+                }
+            }
+
+        } catch (e) {
+            console.log(e.message)
+            this.last_error_message_ = e.message;
+            return;
+        }
+
+
+        // handling nulls
+        var to_remove_data = {},
+            to_remove_dataObs = {},
+            data_length = data.length,
+            dataObs_length = dataObs.length,
+            has_empty_values = false;
+
+        data.forEach(function (el) {
+
+            for (var key in el) {
+                if (el[key] === null && el.hasOwnProperty(key)) {
+                    to_remove_data[el['_ids_'] + "||" + el['_label_'] + "||" + el['_vname_']] = 1
+                    to_remove_dataObs[el['_ids_'] + "||" + el['_label_']] = 1;
+                    has_empty_values = true;
+                }
+            }
+
+        });
+
+        try {
+
+            if (has_empty_values) {
+                data = data.filter(function (el) {
+                    return !to_remove_data.hasOwnProperty(el['_ids_'] + "||" + el['_label_'] + "||" + el['_vname_']);
+                });
+                console.log('Removed ' + (data_length - data.length) + ' rows with nulls from profiles data.');
+                dataObs = dataObs.filter(function (el) {
+                    return !to_remove_dataObs.hasOwnProperty(el['_ids_'] + "||" + el['_label_']);
+                });
+                console.log('Removed ' + (dataObs_length - dataObs.length) + ' rows with nulls from observation data.');
+
+                if (data.length == 0) {
+                    var msg = 'There are no CP profiles in dataset due to null values removing.';
+                    throw new Error(msg);
+                }
+            }
+
+        } catch (e) {
+            console.log(e.message)
+            this.last_error_message_ = e.message;
+            return;
+        }
+
+
+        // changing boolean column to numeric column - profiles data
+        var last_error_message;
+
+        var boolean_variables = [];
+        for (var key in data[0]) {
+            if (typeof data[0][key] == 'boolean') {
+                boolean_variables.push(key)
+            }
+        }
+
+        data = data.map(function (x) {
+            for (var i = 0; i < boolean_variables.length; i++) {
+                key = boolean_variables[i];
+                x[key] = x[key] ? 1 : 0;
+                last_error_message = 'Changed ' + key + ' to numeric'
+            }
+            return x;
+        })
+
+        // changing boolean column to numeric column - observation data
+        boolean_variables = [];
+        for (var key in dataObs[0]) {
+            if (typeof dataObs[0][key] == 'boolean') {
+                boolean_variables.push(key)
+            }
+        }
+
+        dataObs = dataObs.map(function (x) {
+            for (var i = 0; i < boolean_variables.length; i++) {
+                key = boolean_variables[i];
+                x[key] = x[key] ? 1 : 0;
+                last_error_message = 'Changed ' + key + ' to numeric'
+            }
+            return x;
+        })
+
+        this.last_error_message_ = last_error_message;
+
         this.data_ = data;
         this.dataObs_ = dataObs;
 
+
         //handling options
-        this.variables_ = options.variables;
+
+        try {
+
+            if (!isObject(options)) {
+                var msg = '`options` is not an object! Stopping execution.';
+                throw new Error(msg);
+            }
+
+        } catch (e) {
+            console.log(e.message)
+            this.last_error_message_ = e.message;
+            return;
+        }
+
+
+        var all_variables = d3.map(data, function (x) {
+            return x._vname_
+        }).keys();
+
+        if (options.hasOwnProperty('variables') && options.variables != null) {
+
+            try {
+
+                if (options.variables === undefined || options.variables.length == 0) {
+                    var msg = 'There are no variables given in `variables`! Stopping execution.';
+                    throw new Error(msg);
+                } else if (!jQuery.isArray(options.variables)) {
+                    var msg = '`variables` is not an array! Stopping execution';
+                    throw new Error(msg);
+                } else {
+
+                    var not_found_var = options.variables.filter(function (d) {
+                        return all_variables.indexOf(d) === -1
+                    });
+
+                    if (not_found_var.length > 0) {
+                        var msg = 'There are no CP profiles calculated for selected variables: ' + not_found_var.toString();
+                        throw new Error(msg);
+                    }
+                }
+
+            } catch (e) {
+                console.log(e.message)
+                this.last_error_message_ = e.message;
+                return;
+            }
+
+            this.variables_ = options.variables;
+        } else {
+            this.variables_ = all_variables;
+        }
+
+
         // case variables name has improper characters like
         //  !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, `, {, |, }, and ~.
         this.variablesDict_ = {};
@@ -117,11 +326,35 @@
 
         this.is_color_variable_ = false;
 
+
+        function isColor(strColor) {
+            if (strColor)
+                var s = new Option().style;
+            s.color = strColor;
+            return s.color != "" // if given color doesn't exist it set color to "",
+            // changed from s.color == strColor; because of cases like rgba(255,0,0,1), opacity parameter were autom. changed
+        };
+
+
         if (options.hasOwnProperty('color') && options.color !== null) {
-            this.color_ = options.color;
-            if (dataObs[0].hasOwnProperty(options.color)) {
+
+            if (isColor(options.color)) {
+                this.color_ = options.color;
+            } else if (dataObs[0].hasOwnProperty(options.color)) { // it includes case _label_
                 this.is_color_variable_ = true;
+                this.color_ = options.color;
+            } else {
+                try {
+                    var msg = "'color' = " + options.color + " is not a variable from given dataset nor a correct color name.";
+                    throw new Error(msg);
+                } catch (e) {
+                    console.log(e.message)
+                    this.last_error_message_ = e.message;
+                    return;
+                }
+
             }
+
         } else {
             this.color_ = this.default_color;
         }
@@ -283,18 +516,56 @@
             this.yaxis_title_ = this.default_yaxis_title;
         }
 
+        if (options.hasOwnProperty('show_profiles') && options.show_profiles !== null) {
+            this.show_profiles_ = options.show_profiles;
+        } else {
+            this.show_profiles_ = true;
+        }
 
-        this.show_profiles_ = options.show_profiles;
-        this.show_observations_ = options.show_observations;
-        this.show_rugs_ = options.show_rugs;
-        this.show_residuals_ = options.show_residuals;
-        this.aggregate_profiles_ = options.aggregate_profiles;
+        if (options.hasOwnProperty('show_observations') && options.show_observations !== null) {
+            this.show_observations_ = options.show_observations;
+        } else {
+            this.show_observations_ = true;
+        }
+
+        if (options.hasOwnProperty('show_rugs') && options.show_rugs !== null) {
+            this.show_rugs_ = options.show_rugs;
+        } else {
+            this.show_rugs_ = true;
+        }
+
+        if (options.hasOwnProperty('show_residuals') && options.show_residuals !== null) {
+            this.show_residuals_ = options.show_residuals;
+        } else {
+            this.show_residuals_ = true;
+        }
+
+        if (options.hasOwnProperty('aggregate_profiles') && options.aggregate_profiles !== null) {
+
+            try {
+                if (options.aggregate_profiles == 'mean' || options.aggregate_profiles == 'median') {
+                    this.aggregate_profiles_ = options.aggregate_profiles;
+                } else {
+                    var msg = options.aggregate_profiles + ' is not allowed aggregation function, available: "mean" and "median"! Stopping execution.';
+                    throw new Error(msg);
+                }
+
+            } catch (e) {
+                console.log(e.message)
+                this.last_error_message_ = e.message;
+                return;
+            }
+
+        } else {
+            this.aggregate_profiles_ = null;
+        }
 
 
         try {
             this.scaleColorPrepare_();
         } catch (e) {
             console.log(e.message)
+            this.last_error_message_ = e.message;
             //alert(e.message)
             return;
         }
@@ -311,7 +582,6 @@
         } else {
             this.auto_resize_ = this.default_auto_resize;
         }
-
 
 
         this.calculateSizeParameters_();
@@ -450,7 +720,6 @@
         }
 
 
-
     };
 
     CeterisParibusPlot.prototype.createCells_ = function () {
@@ -479,7 +748,8 @@
             svgHeight = this.svgHeight_,
             length_rugs = this.length_rugs_,
             widthAvail = this.widthAvail_,
-            heightAvail = this.heightAvail_;
+            heightAvail = this.heightAvail_,
+            halfStepCategorical = 0;
 
 
         var cells = plotDivCP.selectAll('.cellRow').data(d3.range(1, rows + 1)).enter().append('div')
@@ -575,8 +845,8 @@
                         return x[variables[i]]
                     })[0] == 'string') {
 
-                        if (categorical_order) {
 
+                        if (categorical_order) {
 
                             if (categorical_order.filter(function (x) {
                                 return (x.variable == variables[i])
@@ -587,44 +857,55 @@
                                 })[0]
 
                                 var domain = [];
+                                domain.push(''); //artificial just to add extra space at the beginning
                                 for (var key in order) {
                                     if (order.hasOwnProperty(key) && key != 'variable' && order[key] != null) {
                                         domain.push(order[key]);
                                     }
                                 }
+                                domain.push(' '); //artificial just to add extra space at the end
 
-                                var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]);
+                                var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]); //CAT-CHANGE
                                 scaleX.domain(domain);
 
                             } else {
-                                var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]);
+                                var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]); //CAT-CHANGE
                                 var domain = d3.nest().key(function (d) {
                                     return d[variables[i]]
                                 }).entries(dataVar).map(function (x) {
                                     return x.key
                                 });
+                                domain.unshift(''); //artificial just to add extra space at the beginning
+                                domain.push(' '); //artificial just to add extra space at the end
                                 scaleX.domain(domain);
                             }
 
                         }
                         else {
 
-                            var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]);
+                            var scaleX = d3.scalePoint().rangeRound([0 + length_rugs, widthAvail]); //CAT-CHANGE
                             var domain = d3.nest().key(function (d) {
                                 return d[variables[i]]
                             }).entries(dataVar).map(function (x) {
                                 return x.key
                             });
+                            domain.unshift('');
+                            domain.push(' ');
                             scaleX.domain(domain);
+
                         }
+
+                        // needed to add ends to first and last step in curveStep later
+                        halfStepCategorical = scaleX.step() / 2;
 
                         chartArea.append("g").attr("transform", "translate(0," + heightAvail + ")")
                             .attr("class", "axisX").style('font', font_size_axes + 'px sans-serif')
-                            .call(d3.axisBottom(scaleX).tickSizeOuter(0).tickSizeInner(-heightAvail).tickPadding(tickPaddingSize).ticks(5).tickFormat(d3.format("")))
+                            .call(d3.axisBottom(scaleX).tickSizeOuter(0).tickSizeInner(-heightAvail).tickPadding(tickPaddingSize).ticks(5)) //.tickFormat(d3.format("")))
                             .selectAll('text').attr('transform', 'rotate(-20)')
                             .style("text-anchor", "end");
                         //.attr("dy", "-.10em");
                         //.attr("x", 9).attr('y',0)
+
 
                     }
                     else {
@@ -678,7 +959,7 @@
 
         this.cellsG_ = this.userDiv_.selectAll(".cellMainG") //unnecessary?
         this.scalesX_ = scalesX;
-
+        this.halfStepCategorical_ = halfStepCategorical;
     };
 
 
@@ -724,6 +1005,7 @@
                 }
             }
         )
+
     };
 
 
@@ -740,7 +1022,8 @@
             size_ices = this.size_ices_,
             self = this,
             is_color_variable = this.is_color_variable_,
-            formatPredTooltip = this.formatPredTooltip_;
+            formatPredTooltip = this.formatPredTooltip_,
+            halfStepCategorical = this.halfStepCategorical_;
 
         var per_id_model = d3.nest()
             .key(function (d) {
@@ -757,13 +1040,24 @@
             })
             .entries(dataVar);
 
-        var line = d3.line()
-            .x(function (d) {
-                return scaleX(d[variable]);
-            })
-            .y(function (d) {
-                return scaleY(d["_yhat_"]);
-            });
+        if (typeof scaleX.domain()[0] == 'number') {
+            var line = d3.line()
+                .x(function (d) {
+                    return scaleX(d[variable]);
+                })
+                .y(function (d) {
+                    return scaleY(d["_yhat_"]);
+                });
+        } else {
+            var line = d3.line()
+                .x(function (d) {
+                    return scaleX(d[variable]);
+                })
+                .y(function (d) {
+                    return scaleY(d["_yhat_"]);
+                })
+                .curve(d3.curveStep);
+        }
 
         var iceplotegroups = g.selectAll('g.iceplotgroup').data(per_id_model).enter().append('g').attr('class', 'iceplotgroup');
 
@@ -782,7 +1076,17 @@
             .attr("stroke-linejoin", "round").attr("stroke-linecap", "round").attr("stroke-width", size_ices)
             .attr('opacity', alpha_ices)
             .attr("d", function (x) {
-                return line(x.values)
+
+                var path;
+
+                if (typeof scaleX.domain()[0] == 'number') {
+                    path = line(x.values);
+                } else {
+                    //adding extra start and end of step curve
+                    var path = line(x.values.slice(0, 1)).split('Z')[0] + 'l-' + halfStepCategorical + ',0' + line(x.values) + 'l' + halfStepCategorical + ',0';
+                }
+
+                return path;
             });
 
         var iceplotpoints = iceplotegroups.append('g').attr('class', 'iceplotpointgroup').selectAll('circle.iceplotpoint').data(function (d) {
@@ -889,25 +1193,25 @@
         var pointplots = g.selectAll('circle.point').data(per_id_model).enter().append("circle").attr('class', 'point')
         //.attr('id', function(x) {return 'linechart-' + x.key})
             .attr("fill", function (x) {
-                    if (color_points) {
-                        return color_points;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_points) {
+                    return color_points;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_points) {
-                        return color_points;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_points) {
+                    return color_points;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("stroke-width", '1px')
@@ -1004,25 +1308,25 @@
         g.selectAll('line.rugx').data(per_id_model).enter().append("line").attr('class', 'rugx')
         //.attr('id', function(x) {return 'rugxchart-' + x.key})
             .attr("fill", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{sth}}
             .attr("stroke", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("opacity", alpha_rugs)
@@ -1043,25 +1347,25 @@
         g.selectAll('line.rugy').data(per_id_model).enter().append("line").attr('class', 'rugy')
         //.attr('id', function(x) {return 'rugychart-' + x.key})
             .attr("fill", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_rugs) {
-                        return color_rugs;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x.key;
-                        })[0][color])
-                    }
-                    ;
+                if (color_rugs) {
+                    return color_rugs;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x.key;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("opacity", alpha_rugs)
@@ -1103,25 +1407,25 @@
         var residuallines = g.selectAll('line.residualline').data(id_model).enter().append("line").attr('class', 'residualline')
         //.attr('id', function(x) {return 'residuallinechart-' + x})
             .attr("fill", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("opacity", alpha_residuals)
@@ -1152,25 +1456,25 @@
         var residualpoints = g.selectAll('circle.residualpoint').data(id_model).enter().append("circle").attr('class', 'residualpoint')
         //.attr('id', function(x) {return 'residualpointchart-' + x})
             .attr("fill", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )                                         //[0] to get array inside structure {{cos}}
             .attr("stroke", function (x) {
-                    if (color_residuals) {
-                        return color_residuals;
-                    } else {
-                        return scaleColor(dataObs.filter(function (d) {
-                            return (d['_ids_'] + '|' + d['_label_']) == x;
-                        })[0][color])
-                    }
-                    ;
+                if (color_residuals) {
+                    return color_residuals;
+                } else {
+                    return scaleColor(dataObs.filter(function (d) {
+                        return (d['_ids_'] + '|' + d['_label_']) == x;
+                    })[0][color])
+                }
+                ;
                 }
             )
             .attr("stroke-width", '1px')
@@ -1277,7 +1581,8 @@
             size_pdps = this.size_pdps_,
             color_pdps = this.color_pdps_,
             self = this,
-            formatPredTooltip = this.formatPredTooltip_;
+            formatPredTooltip = this.formatPredTooltip_,
+            halfStepCategorical = this.halfStepCategorical_;
 
         if (aggregate_profiles == 'mean') {
             var nested_data = d3.nest()
@@ -1328,18 +1633,35 @@
                 .entries(dataVar);
         }
 
-        var line = d3.line()
-            .x(function (d) {
-                if (typeof scaleX.domain()[0] == 'number') {
-                    return scaleX(parseFloat(d.key));
-                } else {
-                    return scaleX(d.key);
-                }
-                ;
-            })
-            .y(function (d) {
-                return scaleY(d.value);
-            });
+
+        if (typeof scaleX.domain()[0] == 'number') {
+            var line = d3.line()
+                .x(function (d) {
+                    if (typeof scaleX.domain()[0] == 'number') {
+                        return scaleX(parseFloat(d.key));
+                    } else {
+                        return scaleX(d.key);
+                    }
+                    ;
+                })
+                .y(function (d) {
+                    return scaleY(d.value);
+                });
+        } else {
+            var line = d3.line()
+                .x(function (d) {
+                    if (typeof scaleX.domain()[0] == 'number') {
+                        return scaleX(parseFloat(d.key));
+                    } else {
+                        return scaleX(d.key);
+                    }
+                    ;
+                })
+                .y(function (d) {
+                    return scaleY(d.value);
+                })
+                .curve(d3.curveStep);
+        }
 
         var pdpgroups = g.selectAll('g.pdpgroup').data(nested_data).enter().append('g').attr('class', 'pdpgroup');
 
@@ -1358,7 +1680,17 @@
             .attr("stroke-width", size_pdps)
             .attr('opacity', alpha_pdps)
             .attr("d", function (x) {
-                return line(x.values)
+
+                var path;
+
+                if (typeof scaleX.domain()[0] == 'number') {
+                    path = line(x.values);
+                } else {
+                    //adding extra start and end of step curve
+                    var path = line(x.values.slice(0, 1)).split('Z')[0] + 'l-' + halfStepCategorical + ',0' + line(x.values) + 'l' + halfStepCategorical + ',0';
+                }
+
+                return path;
             });
 
 
@@ -1446,20 +1778,20 @@
 
         var no_colors = this.no_colors_,
             default_color = this.default_color,
-            defaultPaletteCat = d3.schemePaired,
+            defaultPaletteCat = d3.schemeCategory10, //d3.schemePaired,
             defaultPaletteNum = d3.schemeOrRd,
             color = this.color_,
             dataObs = this.dataObs_;
 
-
-
+        // adding colors option for no_colors = 2 and no_colors = 1
+        defaultPaletteNum[1] = [d3.schemeOrRd[3][1]];
+        defaultPaletteNum[2] = [d3.schemeOrRd[3][1], d3.schemeOrRd[3][2]];
 
         this.scaleColor_ = {};
 
         if (typeof dataObs.map(function (x) {
             return x[color];
         })[0] == 'string') {
-
 
             var domainCat = d3.nest().key(function (d) {
                 return d[color]
@@ -1479,6 +1811,7 @@
             return x[color];
         })[0] == 'number') {
 
+
             var nocolorsAvailable = d3.extent(defaultPaletteNum.map(function (x) {
                 return x.length;
             }));
@@ -1494,7 +1827,6 @@
                     scaleMax = d3.max(dataObs.map(function (x) {
                         return x[color]
                     })),
-
                     scaleDivisions,
                     format,
                     scaleDomain = [];
@@ -1504,7 +1836,6 @@
                 // so if we want floor of scaleMin we give it as a first argument, and as a second we can't put anything bigger, cause it changes scaling)
                 scaleMin = d3.scaleLinear().domain([scaleMin, scaleMax]).nice().domain()[0]
                 scaleMax = d3.scaleLinear().domain([scaleMin, scaleMax]).nice().domain()[1]
-
 
                 // to have also nice rounded difference we use nice also here
                 var diff = d3.scaleLinear().domain([0, (scaleMax - scaleMin) / no_colors]).nice().domain()[1]
@@ -1554,9 +1885,10 @@
 
 
                 } else {
-                    scaleDomain = scaleDivisions[0].toString()
-                }
 
+                    scaleDomain = [scaleDivisions[0].toString()];
+
+                }
 
                 scale.domain(scaleDomain);
 
@@ -1599,6 +1931,7 @@
 
                 };
 
+
                 scaleNew.domain = scale.domain;
                 scaleNew.range = scale.range;
                 scaleNew.unknown = scale.unknown;
@@ -1614,7 +1947,7 @@
         else {
             this.scaleColor_ = d3.scaleOrdinal();
             this.scaleColor_.range([default_color]);
-            this.scaleColor_.domain('default');
+            this.scaleColor_.domain(['default']);
         }
     };
 
@@ -1653,7 +1986,6 @@
             });
 
 
-
         var tableRows = tableCP.append('tbody')
             .selectAll('tr').data(this.dataObs_).enter().append("tr")
             .attr("bgcolor", "white")
@@ -1682,8 +2014,8 @@
         tableRows.on("mouseover", function (d) {
 
             /* d3.select(this)
-             .attr("bgcolor", "#eee");
-           */ //not needed datatable hover class is doing it
+                        .attr("bgcolor", "#eee");
+                      */ //not needed datatable hover class is doing it
 
             // highlight iceline
             var id = d['_ids_'],
@@ -1756,9 +2088,9 @@
         tableRows.on("mouseout", function (d) {
 
             /*
-            d3.select(this)
-            .attr("bgcolor", "white");
-            */ //not needed datatable hover class is doing it
+                        d3.select(this)
+                        .attr("bgcolor", "white");
+                        */ //not needed datatable hover class is doing it
 
             var id = d['_ids_'],
                 model = d['_label_'];
@@ -1921,6 +2253,7 @@
                     .call(d3.axisBottom(this.scalesX_[this.variables_[i]]).tickSizeOuter(0).tickSizeInner(-this.heightAvail_).tickPadding(this.default_tickPadding).ticks(5))
                     .selectAll('text').attr('transform', 'rotate(-20)')
                     .style("text-anchor", "end");
+                this.halfStepCategorical_ = this.scalesX_[this.variables_[i]].step() / 2;
             }
 
         }
@@ -2060,19 +2393,43 @@
 
         var scaleY = this.scaleY_,
             scaleX = this.scalesX_[variable],
-            dataObs = this.dataObs_;
+            dataObs = this.dataObs_,
+            halfStepCategorical = this.halfStepCategorical_;
 
-        var line = d3.line()
-            .x(function (d) {
-                return scaleX(d[variable]);
-            })
-            .y(function (d) {
-                return scaleY(d["_yhat_"]);
-            });
+        if (typeof scaleX.domain()[0] == 'number') {
+            var line = d3.line()
+                .x(function (d) {
+                    return scaleX(d[variable]);
+                })
+                .y(function (d) {
+                    return scaleY(d["_yhat_"]);
+                });
+        } else {
+            var line = d3.line()
+                .x(function (d) {
+                    return scaleX(d[variable]);
+                })
+                .y(function (d) {
+                    return scaleY(d["_yhat_"]);
+                })
+                .curve(d3.curveStep);
+        }
+
 
         mainG.selectAll('.iceplotline').attr("d", function (x) {
-            return line(x.values)
+
+            var path;
+
+            if (typeof scaleX.domain()[0] == 'number') {
+                path = line(x.values);
+            } else {
+                //adding extra start and end of step curve
+                var path = line(x.values.slice(0, 1)).split('Z')[0] + 'l-' + halfStepCategorical + ',0' + line(x.values) + 'l' + halfStepCategorical + ',0';
+            }
+
+            return path;
         });
+
         mainG.selectAll('.iceplotpoint')
             .attr('cx', function (d) {
                 return scaleX(d[variable]);
@@ -2080,6 +2437,7 @@
             .attr('cy', function (d) {
                 return scaleY(d['_yhat_']);
             });
+
 
     };
 
@@ -2202,24 +2560,51 @@
     CeterisParibusPlot.prototype.updatePdpPlot_ = function (mainG, variable) {
 
         var scaleY = this.scaleY_,
-            scaleX = this.scalesX_[variable];
+            scaleX = this.scalesX_[variable],
+            halfStepCategorical = this.halfStepCategorical_;
 
-        var line = d3.line()
-            .x(function (d) {
-                if (typeof scaleX.domain()[0] == 'number') {
-                    return scaleX(parseFloat(d.key));
-                } else {
-                    return scaleX(d.key);
-                }
-                ;
-            })
-            .y(function (d) {
-                return scaleY(d.value);
-            });
+        if (typeof scaleX.domain()[0] == 'number') {
+            var line = d3.line()
+                .x(function (d) {
+                    if (typeof scaleX.domain()[0] == 'number') {
+                        return scaleX(parseFloat(d.key));
+                    } else {
+                        return scaleX(d.key);
+                    }
+                    ;
+                })
+                .y(function (d) {
+                    return scaleY(d.value);
+                });
+        } else {
+            var line = d3.line()
+                .x(function (d) {
+                    if (typeof scaleX.domain()[0] == 'number') {
+                        return scaleX(parseFloat(d.key));
+                    } else {
+                        return scaleX(d.key);
+                    }
+                    ;
+                })
+                .y(function (d) {
+                    return scaleY(d.value);
+                })
+                .curve(d3.curveStep);
+        }
 
         mainG.selectAll('path.pdpline')
             .attr("d", function (x) {
-                return line(x.values)
+
+                var path;
+
+                if (typeof scaleX.domain()[0] == 'number') {
+                    path = line(x.values);
+                } else {
+                    //adding extra start and end of step curve
+                    var path = line(x.values.slice(0, 1)).split('Z')[0] + 'l-' + halfStepCategorical + ',0' + line(x.values) + 'l' + halfStepCategorical + ',0';
+                }
+
+                return path;
             });
 
         mainG.selectAll('circle.pdpplotpoint')
@@ -2272,7 +2657,6 @@
         )
 
 
-
     };
 
     CeterisParibusPlot.prototype.resizeFonts = function () {
@@ -2310,7 +2694,6 @@
 
             return adjustment;
         }
-
 
 
         // fonts won't be resized if user give some values for these parameters
@@ -2412,11 +2795,11 @@
 
         var unique_id = '_' + Math.random().toString(36).substr(2, 10);
         /* do {
-             var unique_id = '_' + Math.random().toString(36).substr(2, 10);
-         }
-         while (!d3.select('#chartDiv')["_groups"][0][0])
+                var unique_id = '_' + Math.random().toString(36).substr(2, 10);
+            }
+            while (!d3.select('#chartDiv')["_groups"][0][0])
 
-         */
+            */
 
         return unique_id;
     }
@@ -2605,7 +2988,6 @@
             this.legendWidth_ = this.visWidth_ - this.plotWidth_;
 
 
-
             // plot part (2/2)
 
             this.nCells_ = this.variables_.length;
@@ -2613,7 +2995,6 @@
             this.cols_ = Math.floor(Math.ceil(this.nCells_ / this.rows_));
             this.cellsHeight_ = Math.floor(this.chartHeight_ / this.rows_);
             this.cellsWidth_ = Math.floor(this.plotWidth_ / this.cols_);
-
 
 
             // checking cell title height
@@ -2636,7 +3017,7 @@
 
 
             // calculate legend elements
-            this.legend_part_size_ = Math.floor(this.chartHeight_ / 13); // 13 = 1 for legend title and 12 because of max color available
+            this.legend_part_size_ = Math.floor(this.chartHeight_ / 11); // 11 = 1 for legend title and 10 because of max color available
 
             this.legend_keys_size_ = d3.min([this.default_max_legend_key_size, Math.round(this.legend_part_size_ * 0.5)]); //(0.5 of legendPartSize will do as gapsize)
 
@@ -2697,7 +3078,7 @@
             this.length_rugs_ = this.size_rugs_ * d3.min([this.heightAvail_, this.widthAvail_]) * 0.1; // 0.1 - maximum length of rugs is 10% of Y/X axis height/width
 
             // calculate legend elements
-            this.legend_part_size_ = Math.floor(this.chartHeight_ / 13); // 13 = 1 for legend title and 12 because of max color available
+            this.legend_part_size_ = Math.floor(this.chartHeight_ / 11); // 11 = 1 for legend title and 10 because of max color available
 
             this.legend_keys_size_ = Math.round(this.legend_part_size_ * 0.5); //(0.5 of legendPartSize will do as gapsize)
 

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 PACKAGE_NAME = 'pyCeterisParibus'
 REQUIREMENTS_PATH = 'requirements.txt'
 README_PATH = 'README.md'
-VERSION = '0.3'
+VERSION = '0.4'
 
 
 def get_requirements():

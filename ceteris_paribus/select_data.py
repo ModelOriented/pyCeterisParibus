@@ -60,7 +60,7 @@ def _select_columns(data, observation, variable_names=None, selected_variables=N
             selected_variables, variable_names))
         return data, observation
 
-    subset_data = data.iloc[:, indices].reset_index(drop=True)
+    subset_data = data.iloc[:, indices]
     return subset_data, observation[indices]
 
 
@@ -83,6 +83,7 @@ def select_neighbours(data, observation, y=None, variable_names=None, selected_v
 
     if not isinstance(data, pd.core.frame.DataFrame):
         data = pd.DataFrame(data)
+
     observation = transform_into_Series(observation)
 
     # columns are selected for the purpose of distance calculation
@@ -100,7 +101,9 @@ def select_neighbours(data, observation, y=None, variable_names=None, selected_v
     # selected points have all variables
     selected_points = data.iloc[indices]
     selected_points.reset_index(drop=True, inplace=True)
+
     if y is not None:
-        return selected_points, y[indices]
+        y = transform_into_Series(y)
+        return selected_points, y.iloc[indices].reset_index(drop=True)
     else:
         return selected_points
