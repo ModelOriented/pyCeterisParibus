@@ -7,7 +7,7 @@
 # pyCeterisParibus
 pyCeterisParibus is a Python library based on an *R* package [CeterisParibus](https://github.com/pbiecek/ceterisParibus).
 It implements Ceteris Paribus Plots.
-They allow to understand how model response would changes if a selected variable is changes. 
+They allow understanding how the model response would change if a selected variable is changed. 
 It’s a perfect tool for What-If scenarios. Ceteris Paribus is a Latin phrase meaning all else unchanged. 
 These plots present the change in model response as the values of one feature change with all others being fixed. 
 Ceteris Paribus method is model-agnostic - it works for any Machine Learning model.
@@ -41,9 +41,7 @@ python setup.py install   # (alternatively use pip install .)
 ```
 
 ## Docs
-Latest documentation is hosted here: 
-
-https://pyceterisparibus.readthedocs.io
+A detailed description of all methods and their parameters might be found in [documentation](https://pyceterisparibus.readthedocs.io/en/latest/ceteris_paribus.html).
 
 To build the documentation locally:
 ```bash
@@ -57,7 +55,7 @@ Below we present use cases on two well-known datasets - Titanic and Iris. More e
 
 ## Use case - Titanic survival
 We demonstrate Ceteris Paribus Plots using the well-known Titanic dataset. In this problem, we examine the chance of survival for Titanic passengers.
-We start from preprocessing the data and creating an XGBoost model.
+We start with preprocessing the data and creating an XGBoost model.
 ```python
 import pandas as pd
 df = pd.read_csv('titanic_train.csv')
@@ -185,7 +183,7 @@ plot(cp_xgb_ns, color="Sex", selected_variables=["Pclass", "Age"],
     aggregate_profiles='mean', size_pdps=6, alpha_pdps=1, size=2)
 ```
 
-Plot function comes with an extensive customization options. List of all parameters might be found in documentation.
+Plot function comes with extensive customization options. List of all parameters might be found in the [documentation](https://pyceterisparibus.readthedocs.io/en/latest/ceteris_paribus.plots.html).
 
 ![Influence of gender](misc/titanic_interactions_average.png)
 
@@ -228,6 +226,8 @@ plot(cp_rf1, cp_rf2, cp_rf3, selected_variables=['petal length (cm)', 'petal wid
 ```
 ![Multiclass models](misc/multiclass_models.png)
 
+## Contributing
+You're more than welcomed to contribute to this package. See the [guideline](CONTRIBUTING.md).
 
 ## Acknowledgments
 Work on this package was financially supported by the ‘NCN Opus grant 2016/21/B/ST6/0217’.
