@@ -138,7 +138,7 @@ def plot(cp_profile, *args, destination="browser",
     all_profiles = [cp_profile] + list(args)
 
     plot_id = str(next(_PLOT_NUMBER))
-    plot_path, params_path, obs_path, profile_path = get_data_paths(plot_id)
+    plot_path, params_path, obs_path, profile_path = _get_data_paths(plot_id)
 
     with open(params_path, 'w') as f:
         f.write("params = " + json.dumps(params, indent=2) + ";")
@@ -161,7 +161,7 @@ def plot(cp_profile, *args, destination="browser",
         webbrowser.open(plot_path)
 
 
-def get_data_paths(plot_id):
+def _get_data_paths(plot_id):
     plot_path = os.path.join(_DATA_PATH, "plots{}.html".format(plot_id))
     params_path = os.path.join(_DATA_PATH, "params{}.js".format(plot_id))
     obs_path = os.path.join(_DATA_PATH, 'obs{}.js'.format(plot_id))
