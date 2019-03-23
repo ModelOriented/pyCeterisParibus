@@ -52,7 +52,7 @@ make html
 and open `_build/html/index.html`
 
 ## Examples
-Below we present use cases on two well-known datasets - Titanic and Iris. More examples e.g. for regression problems might be found [here](examples).
+Below we present use cases on two well-known datasets - Titanic and Iris. More examples e.g. for regression problems might be found [here](examples) and in jupyter notebooks [here](jupyter-notebooks).
 
 ## Use case - Titanic survival
 We demonstrate Ceteris Paribus Plots using the well-known Titanic dataset. In this problem, we examine the chance of survival for Titanic passengers.
@@ -149,7 +149,8 @@ plot(cp_xgb, cp_rf, cp_linear, selected_variables=["Age"])
 
 ![Chance of survival for various models](misc/titanic_many_models.png)
 
-Clearly, XGBoost offers a better fit than Logistic Regression and is less overfitted than a Random Forest model.
+Clearly, XGBoost offers a better fit than Logistic Regression. 
+Also, it predicts a higher chance of survival at child's age than the Random Forest model does.
 
 ### Many variables
 This time we have a look at Miss. Elizabeth Mussey Eustis. She is 54 years old, travels at 1. class with her sister Marta, as they return to the US from their tour of southern Europe. They both survived the disaster.
@@ -196,7 +197,7 @@ Additionally, one can interact with the plot by hovering over a point of interes
 
 ### Multiclass models - Iris dataset
 Prepare dataset and model
-```
+```python
 iris = load_iris()
 
 def random_forest_classifier():
@@ -206,7 +207,7 @@ def random_forest_classifier():
 ```
 
 Wrap model into explainers
-```
+```python
 rf_model, iris_x, iris_y, iris_var_names = random_forest_classifier()
 
 explainer_rf1 = explain(rf_model, iris_var_names, iris_x, iris_y,
@@ -218,7 +219,7 @@ explainer_rf3 = explain(rf_model, iris_var_names, iris_x, iris_y,
 ```
 
 Calculate profiles and plot
-```
+```python
 cp_rf1 = individual_variable_profile(explainer_rf1, iris_x[0], iris_y[0])
 cp_rf2 = individual_variable_profile(explainer_rf2, iris_x[0], iris_y[0])
 cp_rf3 = individual_variable_profile(explainer_rf3, iris_x[0], iris_y[0])
