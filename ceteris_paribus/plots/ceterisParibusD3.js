@@ -497,7 +497,16 @@
         }
 
 
-        if (isFinite(((this.dataObs_[0]['_y_'] + '').split('.')[1]))) {
+        var min_yhat = d3.min(this.data_, function (d) {
+                return d['_yhat_'];
+            }),
+            max_yhat = d3.max(this.data_, function (d) {
+                return d['_yhat_'];
+            });
+
+        if (min_yhat >= 0 & max_yhat <= 1) {
+            this.formatPredTooltip_ = '.2f';
+        } else if (isFinite(((this.dataObs_[0]['_y_'] + '').split('.')[1]))) {
             this.formatPredTooltip_ = '.' + ((this.dataObs_[0]['_y_'] + '').split('.')[1]).length + 'f';
         } else {
             this.formatPredTooltip_ = '.0f'
@@ -585,6 +594,7 @@
 
 
         this.calculateSizeParameters_();
+
 
         // handling own CP div
         var titleDivCP = this.userDiv_.append('div')
@@ -774,7 +784,7 @@
 
         cells = this.userDiv_.selectAll('.cellBody');
 
-        var scaleY = d3.scaleLinear().rangeRound([this.heightAvail_ - this.length_rugs_ - 5, 0]);      // czemu - 5?
+        var scaleY = d3.scaleLinear().rangeRound([this.heightAvail_ - this.length_rugs_ - 5, 0]);
 
         var minScaleY = d3.min([d3.min(data, function (d) {
                 return d["_yhat_"];
@@ -1722,7 +1732,7 @@
                     "y_pred: " + d3.format(formatPredTooltip)(d.value) + "<br/>" +
                     variable + ": " + d.key + "<br/>"
                 )
-                    .style("left", (d3.event.pageX + 15) + "px") // ustalamy pozycje elementu tam gdzie zostanie akcja podjeta
+                    .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY) + "px")
                     .transition()
                     .duration(300)
@@ -2710,7 +2720,8 @@
                 this.plotDivCP_.selectAll('.titleCell').style('font', this.font_size_titles_ + 'px sans-serif')
             }
             ;
-        }
+            }
+
 
         if (!this.is_set_font_size_axes_) {
             this.font_size_axes_ = Math.round(this.default_font_size_axes * getAdjustmentPct(this.visWidth_));
@@ -2776,7 +2787,9 @@
             this.visWidth_ = w;
 
             this.resizeFonts();
+
             this.calculateSizeParameters_();
+
 
             this.updateXYScalesAndAxes_();
             this.updateCellsStructure_();
@@ -2826,26 +2839,34 @@
             temporaryTextField.text(self.yaxis_title_);
             var yAxisTitleSize = self.getSize_(temporaryTextField).height; //height, not width because I didn't rotate it yet
 
-            // yaxis ticks width (only one per all variables, we will analyze only min and max from this axis)
-            temporaryTextField.text(d3.format("d")(d3.min([d3.min(self.data_, function (d) {
+            // yaxis ticks width (only one per all variables, we create artificial axis to get all ticks values)
+
+            var minTempScaleY = d3.min([d3.min(self.data_, function (d) {
                     return d["_yhat_"];
                 }),
                     d3.min(self.dataObs_, function (d) {
                         return d["_y_"];
-                    })])
-            ));
-            var yAxisMin = self.getSize_(temporaryTextField).width;
-
-            temporaryTextField.text(d3.format("d")(d3.max([d3.max(self.data_, function (d) {
+                    })]),
+                maxTempScaleY = d3.max([d3.max(self.data_, function (d) {
                     return d["_yhat_"];
                 }),
                     d3.max(self.dataObs_, function (d) {
                         return d["_y_"];
-                    })])
-            ));
-            var yAxisMax = self.getSize_(temporaryTextField).width;
+                    })]);
 
-            var yAxisSize = d3.max([yAxisMin, yAxisMax]);
+            var tempScaleY = d3.scaleLinear().rangeRound([self.svgHeight_, 0]);
+
+            tempScaleY.domain([minTempScaleY, maxTempScaleY]).nice();
+            var aa = d3.axisLeft(tempScaleY).ticks(5).tickFormat(d3.format(""))
+
+            var tempTicks = aa.scale().ticks();
+
+            var tempTicksSize = tempTicks.map(function (d) {
+                temporaryTextField.text(d);
+                return self.getSize_(temporaryTextField).width;
+            })
+
+            var yAxisSize = d3.max(tempTicksSize);
 
             // xaxis (max per each variable)
 
@@ -2909,7 +2930,7 @@
             temporaryTextField.remove();
 
             return {margin: margin, yAxisTitleSize: yAxisTitleSize};
-        }
+        };
 
         if (this.is_set_font_size_axes_) {
 
@@ -3009,7 +3030,6 @@
 
             // calculate proper mergins
             this.calculateAxesFontandMargins_();
-
             this.widthAvail_ = this.cellsWidth_ - this.default_margins.left - this.default_margins.right,
                 this.heightAvail_ = this.cellsHeight_ - this.titleCellHeight_ - this.default_margins.top - this.default_margins.bottom;
 
@@ -3070,6 +3090,7 @@
             this.calculateAxesFontandMargins_();
             this.plotDivCP_.selectAll('.axisY').style('font', this.font_size_axes_ + 'px sans-serif');
             this.plotDivCP_.selectAll('.axisX').style('font', this.font_size_axes_ + 'px sans-serif');
+            this.plotDivCP_.selectAll('.yaxis_title_g').style('font', this.font_size_axes_ + 'px sans-serif'); ///NEW
 
 
             this.widthAvail_ = this.cellsWidth_ - this.default_margins.left - this.default_margins.right,
