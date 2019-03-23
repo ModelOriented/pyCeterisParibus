@@ -96,6 +96,15 @@ class TestSelect(unittest.TestCase):
         sample_x2 = select_neighbours(pd.DataFrame(self.x), [4, 1, 5], n=10)
         np.testing.assert_array_equal(sample_x, sample_x2)
 
+    def test_select_neighbours_10(self):
+        df = pd.DataFrame({'a': list(range(100)), 'b': 11, 'c': np.arange(0, 200, 2) / 7})
+        y = pd.Series(range(100))
+        sample_x, sample_y = select_neighbours(df, [3, 11, 7.4], y, n=5)
+        self.assertEqual(sample_x.shape, (5, 3))
+        self.assertEqual(len(sample_y), 5)
+        np.testing.assert_array_equal(sample_x['a'], sample_y)
+
+
     @staticmethod
     def select_columns_helper(true, result):
         np.testing.assert_array_equal(true[0], result[0])

@@ -39,7 +39,7 @@ def _gower_dist(xi, xj, ranges, dtypes):
     cols = len(ranges)
     for col in range(cols):
         if np.issubdtype(dtypes[col], np.number):
-            if pd.isnull(xi[col]) or pd.isnull(xj[col]):
+            if pd.isnull(xi[col]) or pd.isnull(xj[col]) or np.isclose(0, ranges[col]):
                 wij = 0
                 sij = 0
             else:

@@ -1,3 +1,4 @@
+import os
 import unittest
 from collections import OrderedDict
 from unittest.mock import MagicMock
@@ -6,7 +7,8 @@ import numpy as np
 import pandas as pd
 
 from ceteris_paribus.profiles import _get_variables, CeterisParibus, _valid_variable_splits
-from ceteris_paribus.utils import dump_profiles, dump_observations, transform_into_Series
+from ceteris_paribus.utils import dump_profiles, dump_observations, transform_into_Series, save_profiles, \
+    save_observations
 
 
 class TestProfiles(unittest.TestCase):
@@ -197,10 +199,9 @@ class TestProfilesUtils(unittest.TestCase):
         # true values not given
         self.cp1.new_observation_true = None
         observations = dump_observations([self.cp1])
-        self.assertEqual(len(observations), 6)
-        self.assertEqual(observations[0]['_vname_'], "a")
-        self.assertEqual(observations[4]["_label_"], "some_label")
-        self.assertEqual(observations[3]["_y_"], None)
+        self.assertEqual(len(observations), 3)
+        self.assertEqual(observations[2]["_label_"], "some_label")
+        self.assertEqual(observations[1]["_y_"], None)
 
     def test_dump_observations_2(self):
         self.cp1.new_observation = pd.DataFrame.from_dict({
@@ -230,3 +231,47 @@ class TestProfilesUtils(unittest.TestCase):
         a = pd.DataFrame(OrderedDict(zip(['a', 'b'], [[1, 2, 3], [4, 2, 1]])))
         b = transform_into_Series(a)
         np.testing.assert_array_equal(b, [1, 2, 3])
+
+    def test_save_observations(self):
+        self.cp1.new_observation = pd.DataFrame.from_dict({
+            "a": [1.2, 3.4, 2.6],
+            "c": [4, 5, 12]
+        })
+        self.cp1.all_variable_names = list(self.cp1.new_observation.columns)
+        self.cp1.selected_variables = ["a", "c"]
+        self.cp1.new_observation_predictions = [12, 3, 6]
+        self.cp1._label = "some_label"
+        # true values not given
+        self.cp1.new_observation_true = None
+        filename = '_tmp_file_'
+        save_observations([self.cp1], filename)
+        with open(filename, 'r') as f:
+            self.assertTrue(f.read().startswith('observation ='))
+        os.remove(filename)
+
+    def test_save_profiles(self):
+        records = [{
+            "age": 19.0,
+            "_vname_": "children",
+            "_yhat_": 19531.877043934743,
+            "_label_": "GradientBoostingRegressor",
+            "children": 4.0,
+            "_ids_": 0,
+            "bmi": 27.9
+        },
+            {
+                "age": 19.0,
+                "_vname_": "children",
+                "_yhat_": 19531.877043934743,
+                "_label_": "GradientBoostingRegressor",
+                "children": 4.0,
+                "_ids_": 0,
+                "bmi": 27.9
+            }]
+
+        self.cp1.profile = pd.DataFrame.from_records(records)
+        filename = '_tmp_file2_'
+        save_profiles([self.cp1], filename)
+        with open(filename, 'r') as f:
+            self.assertTrue(f.read().startswith('profile ='))
+        os.remove(filename)
