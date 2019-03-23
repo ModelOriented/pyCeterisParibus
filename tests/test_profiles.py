@@ -239,7 +239,7 @@ class TestProfilesUtils(unittest.TestCase):
         })
         self.cp1.all_variable_names = list(self.cp1.new_observation.columns)
         self.cp1.selected_variables = ["a", "c"]
-        self.cp1.new_observation_predictions = [12, 3, 6]
+        self.cp1.new_observation_predictions = np.array([12, 3, 6], dtype=np.int64)
         self.cp1._label = "some_label"
         # true values not given
         self.cp1.new_observation_true = None
@@ -270,6 +270,7 @@ class TestProfilesUtils(unittest.TestCase):
             }]
 
         self.cp1.profile = pd.DataFrame.from_records(records)
+        self.cp1.profile['_yhat_'] = self.cp1.profile['_yhat_'].astype(np.float128)
         filename = '_tmp_file2_'
         save_profiles([self.cp1], filename)
         with open(filename, 'r') as f:
