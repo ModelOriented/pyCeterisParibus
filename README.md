@@ -14,7 +14,7 @@ These plots present the change in model response as the values of one feature ch
 Ceteris Paribus method is model-agnostic - it works for any Machine Learning model.
 The idea is an extension of PDP (Partial Dependency Plots) and ICE (Individual Conditional Expectations) plots.
 It allows explaining single observations for multiple variables at the same time.
-The plot engine is developed [here](https://github.com/MI2DataLab/ceterisParibusExt).
+The plot engine is developed [here](https://github.com/ModelOriented/ceterisParibusD3).
 
 ## Why is it so useful?
 There might be several motivations behind utilizing this idea. 
@@ -99,7 +99,7 @@ xgb_clf = Pipeline(steps=[('preprocessor', preprocessor),
 xgb_clf.fit(X_train, y_train)
 ```
 
-The model is wrapped into the unified form.
+Here the pyCeterisParibus starts. Since this library works in a model agnostic fashion, first we need to create a wrapper around the model with uniform predict interface.
 ```python
 from ceteris_paribus.explainer import explain
 explainer_xgb = explain(xgb_clf, data=x, y=y, label='XGBoost',
@@ -109,7 +109,7 @@ explainer_xgb = explain(xgb_clf, data=x, y=y, label='XGBoost',
 
 ### Single variable profile
 Let's look at Mr Ernest James Crease, the 19-year-old man, travelling on the 3. class from Southampton with an 8 pounds ticket in his pocket. He died on Titanic. Most likely, this would not have been the case had Ernest been a few years younger.
-This plot presents the chance of survival for a person like Ernest at different ages. We can see things were tough for people like him unless they were a child.
+Figure 1 presents the chance of survival for a person like Ernest at different ages. We can see things were tough for people like him unless they were a child.
 
 ```python
 ernest = X_test.iloc[10]
@@ -147,12 +147,12 @@ explainer_linear = explain(linear_clf, data=x, y=y, label='LogisticRegression',
 plot(cp_xgb, cp_rf, cp_linear, selected_variables=["Age"])
 ```
 
-![Chance of survival for various models](misc/titanic_many_models.png)
+![The probability of survival estimated with various models.](misc/titanic_many_models.png)
 
 Clearly, XGBoost offers a better fit than Logistic Regression. 
 Also, it predicts a higher chance of survival at child's age than the Random Forest model does.
 
-### Many variables
+### Profiles for many variables
 This time we have a look at Miss. Elizabeth Mussey Eustis. She is 54 years old, travels at 1. class with her sister Marta, as they return to the US from their tour of southern Europe. They both survived the disaster.
 
 ```python
@@ -165,7 +165,7 @@ cp_xgb_2 = individual_variable_profile(explainer_xgb, elizabeth, label_elizabeth
 plot(cp_xgb_2, selected_variables=["Pclass", "Sex", "Age", "Embarked"])
 ```
 
-![Many variables](misc/titanic_many_variables.png)
+![Profiles for many variables.](misc/titanic_many_variables.png)
 
 Would she have returned home if she had travelled at 3. class or if she had been a man? As we can observe this is less likely. On the other hand, for a first class, female passenger chances of survival were high regardless of age. Note, this was different in the case of Ernest. Place of embarkment (Cherbourg) has no influence, which is expected behaviour.
 
@@ -185,13 +185,11 @@ plot(cp_xgb_ns, color="Sex", selected_variables=["Pclass", "Age"],
     aggregate_profiles='mean', size_pdps=6, alpha_pdps=1, size=2)
 ```
 
-Plot function comes with extensive customization options. List of all parameters might be found in the [documentation](https://pyceterisparibus.readthedocs.io/en/latest/ceteris_paribus.plots.html).
+![Interaction with gender. Apart from charts with Ceteris Paribus Profiles (top of the visualisation), we can plot a table with observations used to calculate these profiles (bottom of the visualisation).](misc/titanic_interactions_average.png)
 
-![Influence of gender](misc/titanic_interactions_average.png)
+There are two distinct clusters of passengers determined with their gender, therefore a *PDP* average plot (on grey) does not show the whole picture. Children of both genders were likely to survive, but then we see a large gap. Also, being female increased the chance of survival mostly for second and first class passengers.
 
-There are two distinct clusters of passengers determined with their gender. Therefore a *PDP* average plot (on grey) does not show the whole picture. Children of both genders were likely to survive, but then we see a large gap. Also, being female increased the chance of survival mostly for second and first class passengers.
-
-Additionally, one can interact with the plot by hovering over a point of interest to see more details. Similarly, there is an interactive table with options for highlighting relevant elements as well as filtering and sorting rows.
+Plot function comes with extensive customization options. List of all parameters might be found in the documentation. Additionally, one can interact with the plot by hovering over a point of interest to see more details. Similarly, there is an interactive table with options for highlighting relevant elements as well as filtering and sorting rows.
 
 
 
