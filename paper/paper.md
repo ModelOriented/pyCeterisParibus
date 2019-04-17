@@ -25,16 +25,16 @@ bibliography: paper.bib
 
 # Introduction
 
-Machine learning is needed and used everywhere. It has fundamentally changed all data-driven disciplines, like health-care, biology, finance, legal, military, security, transportation, and many others. The increasing availability of large annotated data sources combined with recent developments in machine learning leads to the next industrial revolution. **BUT**. Predictive models become more and more complex. It is not uncommon to have ensembles of predictive models with thousands or millions of parameters. Such models act as black-boxes. It is almost impossible for a human to understand reasons for model decisions.
+Machine learning is needed and used everywhere. It has fundamentally changed all data-driven disciplines, like health-care, biology, finance, legal, military, security, transportation, and many others. The increasing availability of large annotated data sources combined with recent developments in Machine Learning revolutionizes many disciplines. However, predictive models become more and more complex. It is not uncommon to have ensembles of predictive models with thousands or millions of parameters. Such models act as blackboxes. It is almost impossible for a human to understand reasons for model decisions.
 
 This lack of interpretability often leads to harmful situations. Models are not working properly or are hard to debug, results are biased in a systematic way, data drift leads to the deterioration in models performance, the model is wrong but no-one can explain what caused a wrong prediction. Many examples for these problems are listed in the *Weapons of Math Destruction*, a bestseller with an expressive subtitle *How Big Data Increases Inequality and Threatens Democracy* [@ONeil]. Reactions for some of these problems are new legal regulations, like the *General Data Protection Regulation and the Right to Explanation* [@RightToExpl3].
 
-New tools are being created to support model interpretability. The most known methods are Local interpretable model-agnostic explanations (LIME) [@LIME], SHapley Additive exPlanations (SHAP) [@SHAP] and Descriptive mAchine Learning EXplanations (DALEX) [@DALEX]. General purpose libraries for interpretable machine learning in Python are skater [@pramit_choudhary_2018_1198885] and [ELI5](https://eli5.readthedocs.io/en/latest/).
+New tools are being created to support model interpretability. The most known methods are Local Interpretable Model-agnostic Explanations (LIME) [@LIME], SHapley Additive exPlanations (SHAP) [@SHAP] and Descriptive mAchine Learning EXplanations (DALEX) [@DALEX]. General purpose libraries for interpretable Machine Learning in Python are skater [@pramit_choudhary_2018_1198885] and [ELI5](https://eli5.readthedocs.io/en/latest/).
 
 An interesting alternative to these tools is the methodology of *Ceteris Paribus Profiles* and their averages called *Partial Dependency Plots*. They enable to understand how the model response would change if a selected variable is changed. It's a perfect tool for What-If scenarios. _Ceteris Paribus_ is a Latin phrase meaning _all else unchanged_. These plots present the change in model response as the values of one feature change with all others being fixed. Ceteris Paribus method is model-agnostic - it works for any Machine Learning model.
 The idea is an extension of *PDP* (Partial Dependency Plots) [@Friedman00greedyfunction] and *ICE* (Individual Conditional Expectations) plots [@GoldsteinICE]. It allows explaining single observations for multiple variables at the same time.
 
-In this paper, we introduce a `pyCeterisParibus` library for Python that supports a wide range of tools built on Ceteris Paribus Profiles. There might be several motivations behind utilizing this idea. Imagine a person gets a low credit score. The client wants to understand how to increase the score and the scoring institution (e.g. a bank) should be able to answer such questions. Moreover, this method is useful for researchers and developers to analyze, debug, explain and improve Machine Learning models, assisting the entire process of the model design. The more detailed demonstration is available in the *Examples* section.
+In this paper, we introduce a `pyCeterisParibus` library for Python that supports a wide range of tools built on Ceteris Paribus Profiles. There might be several motivations behind utilizing this idea. Imagine a person gets a low credit score. The client wants to understand how to increase the score and the scoring institution (e.g., a bank) should be able to answer such questions. Moreover, this method is useful for researchers and developers to analyze, debug, explain and improve Machine Learning models, assisting the entire process of the model design. The more detailed demonstration is available in the *Examples* section.
 
 
 # pyCeterisParibus library
@@ -90,6 +90,7 @@ preprocessor = ColumnTransformer(
 ```
 
 ```python
+from xgboost import XGBClassifier
 xgb_clf = Pipeline(steps=[('preprocessor', preprocessor),
 ('classifier', XGBClassifier())])
 xgb_clf.fit(X_train, y_train)
@@ -104,7 +105,7 @@ explainer_xgb = explain(xgb_clf, data=x, y=y, label='XGBoost',
 
 
 ### Single variable profile
-Let's look at Mr Ernest James Crease, the 19-year-old man, travelling on the 3. class from Southampton with an 8 pounds ticket in his pocket. He died on Titanic. Most likely, this would not have been the case had Ernest been a few years younger.
+Let's look at Mr Ernest James Crease, the 19-year-old man, travelling on the 3rd class from Southampton with an 8 pounds ticket in his pocket. He died on the Titanic. Most likely, this would not have been the case had Ernest been a few years younger.
 Figure 1 presents the chance of survival for a person like Ernest at different ages. We can see things were tough for people like him unless they were a child.
 
 ```python
@@ -127,6 +128,8 @@ plot(cp_xgb, selected_variables=["Age"])
 The above picture explains the prediction of XGBoost model. What if we compare various models?
 
 ```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 rf_clf = Pipeline(steps=[('preprocessor', preprocessor),
     ('classifier', RandomForestClassifier())])
 linear_clf = Pipeline(steps=[('preprocessor', preprocessor),
@@ -149,7 +152,7 @@ Clearly, XGBoost offers a better fit than Logistic Regression (Figure 2).
 Also, it predicts a higher chance of survival at child's age than the Random Forest model does.
 
 ### Profiles for many variables
-This time we have a look at Miss. Elizabeth Mussey Eustis. She is 54 years old, travels at 1. class with her sister Marta, as they return to the US from their tour of southern Europe. They both survived the disaster.
+This time we have a look at Miss. Elizabeth Mussey Eustis. She is 54 years old, travels at 1st class with her sister Marta, as they return to the US from their tour of southern Europe. They both survived the disaster.
 
 ```python
 elizabeth = X_test.iloc[1]
@@ -163,7 +166,7 @@ plot(cp_xgb_2, selected_variables=["Pclass", "Sex", "Age", "Embarked"])
 
 ![Profiles for many variables.](./img/figure3.png)
 
-Would she have returned home if she had travelled at 3. class or if she had been a man? As we can observe (Figure 3) this is less likely. On the other hand, for a first class, female passenger chances of survival were high regardless of age. Note, this was different in the case of Ernest. Place of embarkment (Cherbourg) has no influence, which is expected behaviour.
+Would she have returned home if she had travelled at 3rd class or if she had been a man? As we can observe (Figure 3) this is less likely. On the other hand, for a first class, female passenger chances of survival were high regardless of age. Note, this was different in the case of Ernest. Place of embarkment (Cherbourg) has no influence, which is expected behaviour.
 
 ### Feature interactions and average response
 Now, what if we look at passengers most similar to Miss. Eustis (middle-aged, upper class)?
