@@ -94,6 +94,7 @@ preprocessor = ColumnTransformer(
 ```
 
 ```python
+from xgboost import XGBClassifier
 xgb_clf = Pipeline(steps=[('preprocessor', preprocessor),
 ('classifier', XGBClassifier())])
 xgb_clf.fit(X_train, y_train)
@@ -131,6 +132,8 @@ plot(cp_xgb, selected_variables=["Age"])
 The above picture explains the prediction of XGBoost model. What if we compare various models?
 
 ```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 rf_clf = Pipeline(steps=[('preprocessor', preprocessor),
     ('classifier', RandomForestClassifier())])
 linear_clf = Pipeline(steps=[('preprocessor', preprocessor),
