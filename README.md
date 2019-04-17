@@ -202,7 +202,7 @@ Prepare dataset and model
 iris = load_iris()
 
 def random_forest_classifier():
-    rf_model = ensemble.RandomForestClassifier(n_estimators=100, random_state=42)
+    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
     rf_model.fit(iris['data'], iris['target'])
     return rf_model, iris['data'], iris['target'], iris['feature_names']
 ```
