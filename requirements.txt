@@ -12,3 +12,4 @@ scikit-learn~=0.20.0
 scipy>=1.1.0
 sklearn==0.0
 Sphinx>=1.8.3
+tensorflow>=1.12.0
