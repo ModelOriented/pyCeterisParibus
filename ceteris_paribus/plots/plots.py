@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 import webbrowser
 from shutil import copyfile
 
@@ -158,6 +159,8 @@ def plot(cp_profile, *args, destination="browser",
         display(IFrame(plot_path, width=int(width * 1.1), height=int(height * 1.1)))
     else:
         # open plot in a browser
+        if sys.platform == "darwin":  # check if on OSX
+            plot_path = "file://" + os.path.abspath(plot_path)
         webbrowser.open(plot_path)
 
 
