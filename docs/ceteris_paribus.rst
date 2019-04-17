@@ -20,6 +20,9 @@ ceteris\_paribus.explainer module
 
 ceteris\_paribus.gower module
 -----------------------------
+Gower Distance is a distance measure, that might be used to calculate the similarity between two observations with both categorical and numerical values. It also permits missing values in categorical variables. Therefore this measure might be applied in any dataset. Here we use it as a default function for finding the closest observations to the given one.
+
+The original paper describing the idea might be found `here <http://members.cbio.mines-paristech.fr/~jvert/svn/bibli/local/Gower1971general.pdf>`_.
 
 .. automodule:: ceteris_paribus.gower
     :members:
