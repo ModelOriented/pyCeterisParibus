@@ -46,6 +46,7 @@ A detailed description of all methods and their parameters might be found in [do
 
 To build the documentation locally:
 ```bash
+pip install -r requirements-dev.txt
 cd docs
 make html
 ```
@@ -53,6 +54,8 @@ and open `_build/html/index.html`
 
 ## Examples
 Below we present use cases on two well-known datasets - Titanic and Iris. More examples e.g. for regression problems might be found [here](examples) and in jupyter notebooks [here](jupyter-notebooks).
+
+Note, that in order to run the examples you need to install extra requirements from `requirements-dev.txt`.
 
 ## Use case - Titanic survival
 We demonstrate Ceteris Paribus Plots using the well-known Titanic dataset. In this problem, we examine the chance of survival for Titanic passengers.
