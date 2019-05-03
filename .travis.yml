@@ -19,7 +19,7 @@ matrix:
 
 # command to install dependencies
 install:
-  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
 script:
   - python -m pytest --cov=./
 after_success:
