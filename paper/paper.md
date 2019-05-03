@@ -38,7 +38,7 @@ In this paper, we introduce a `pyCeterisParibus` library for Python that support
 
 
 # pyCeterisParibus library
-`pyCeterisParibus` is a Python [library](https://github.com/ModelOriented/pyCeterisParibus) based on an *R* package [CeterisParibus](https://github.com/pbiecek/ceterisParibus). It is an open source software released on the Apache license.
+`pyCeterisParibus` is a Python [library](https://github.com/ModelOriented/pyCeterisParibus) based on an *R* package *CeterisParibus* [@CeterisParibus]. It is an open source software released on the Apache license.
 
 The workflow consists of three steps:
 
