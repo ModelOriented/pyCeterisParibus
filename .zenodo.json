@@ -1,0 +1,24 @@
+{
+    "description": "Python library for Ceteris Paribus Plots (What-if plots)", 
+    "license": "other-open", 
+    "title": "pyCeterisParibus: explaining Machine Learning models with Ceteris Paribus Profiles in Python", 
+    "upload_type": "software", 
+    "creators": [
+        {
+            "affiliation": "Faculty of Mathematics and Information Science, Warsaw University of Technology, Faculty of Mathematics, Informatics, and Mechanics, University of Warsaw", 
+            "name": "Michał Kuźba",
+            "orcid": "0000-0002-9181-0126"
+        }, 
+        {
+            "affiliation": "Faculty of Mathematics and Information Science, Warsaw University of Technology",
+            "name": "Ewa Baranowska",
+            "orcid": "0000-0002-2278-4219"
+        }, 
+        {
+            "affiliation": "Faculty of Mathematics and Information Science, Warsaw University of Technology, Faculty of Mathematics, Informatics, and Mechanics, University of Warsaw", 
+            "name": "Przemysław Biecek",
+            "orcid": "0000-0001-8423-1823"
+        }
+    ], 
+    "access_right": "open"
+}
