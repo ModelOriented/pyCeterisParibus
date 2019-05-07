@@ -4,8 +4,9 @@
 [![Documentation Status](https://readthedocs.org/projects/pyceterisparibus/badge/?version=latest)](https://pyceterisparibus.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://pepy.tech/badge/pyceterisparibus)](https://pepy.tech/project/pyceterisparibus)
 [![PyPI version](https://badge.fury.io/py/pyCeterisParibus.svg)](https://badge.fury.io/py/pyCeterisParibus)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2667756.svg)](https://doi.org/10.5281/zenodo.2667756)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2667756.svg)](https://doi.org/10.5281/zenodo.2667756)
+[![status](http://joss.theoj.org/papers/aad9a21c61c01adebe11bc5bc1ceca92/status.svg)](http://joss.theoj.org/papers/aad9a21c61c01adebe11bc5bc1ceca92)
 
 # pyCeterisParibus
 pyCeterisParibus is a Python library based on an *R* package [CeterisParibus](https://github.com/pbiecek/ceterisParibus).
