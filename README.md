@@ -10,7 +10,7 @@
 
 # pyCeterisParibus
 
-<p style="color:red">*Please note that the Ceteris Paribus method is moved to the dalex Python package which is actively maintained. If you will experience any problem with pyCeterisParibus please consider the dalex implementation at https://dalex.drwhy.ai/python/api/.*</p>
+**Please note that the Ceteris Paribus method is moved to the dalex Python package which is actively maintained. If you will experience any problem with pyCeterisParibus please consider the dalex implementation at https://dalex.drwhy.ai/python/api/.**
 
 pyCeterisParibus is a Python library based on an *R* package [CeterisParibus](https://github.com/pbiecek/ceterisParibus).
 It implements Ceteris Paribus Plots.
