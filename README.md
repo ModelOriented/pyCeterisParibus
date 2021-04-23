@@ -9,6 +9,9 @@
 [![status](http://joss.theoj.org/papers/aad9a21c61c01adebe11bc5bc1ceca92/status.svg)](http://joss.theoj.org/papers/aad9a21c61c01adebe11bc5bc1ceca92)
 
 # pyCeterisParibus
+
+<p style="color:red">*Please note that the Ceteris Paribus method is moved to the dalex Python package which is actively maintained. If you will experience any problem with pyCeterisParibus please consider the dalex implementation at https://dalex.drwhy.ai/python/api/.*</p>
+
 pyCeterisParibus is a Python library based on an *R* package [CeterisParibus](https://github.com/pbiecek/ceterisParibus).
 It implements Ceteris Paribus Plots.
 They allow understanding how the model response would change if a selected variable is changed. 
